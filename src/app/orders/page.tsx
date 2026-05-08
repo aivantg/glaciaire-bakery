@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import type { Order, OrderStatus } from "@/lib/store";
 
 function formatPrice(cents: number): string {
@@ -51,13 +51,37 @@ export default function OrdersPage() {
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<FilterStatus>("all");
   const [updating, setUpdating] = useState<string | null>(null);
+  const [newOrderIds, setNewOrderIds] = useState<Set<string>>(new Set());
+  const knownOrderIds = useRef<Set<string>>(new Set());
+  const isFirstFetch = useRef(true);
 
   const fetchOrders = useCallback(async () => {
     setError(null);
     try {
       const res = await fetch("/api/orders");
       if (!res.ok) throw new Error("Failed to load orders");
-      setOrders(await res.json());
+      const data: Order[] = await res.json();
+
+      // Detect newly arrived orders (skip on first load)
+      if (!isFirstFetch.current) {
+        const incoming = new Set(data.map((o) => o.id));
+        const arrived = [...incoming].filter((id) => !knownOrderIds.current.has(id));
+        if (arrived.length > 0) {
+          setNewOrderIds((prev) => new Set([...prev, ...arrived]));
+          // Remove "new" highlight after 4 seconds
+          setTimeout(() => {
+            setNewOrderIds((prev) => {
+              const next = new Set(prev);
+              arrived.forEach((id) => next.delete(id));
+              return next;
+            });
+          }, 4000);
+        }
+      }
+
+      knownOrderIds.current = new Set(data.map((o) => o.id));
+      isFirstFetch.current = false;
+      setOrders(data);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Unknown error");
     } finally {
@@ -67,7 +91,7 @@ export default function OrdersPage() {
 
   useEffect(() => {
     fetchOrders();
-    const interval = setInterval(fetchOrders, 15000);
+    const interval = setInterval(fetchOrders, 3000);
     return () => clearInterval(interval);
   }, [fetchOrders]);
 
@@ -103,7 +127,17 @@ export default function OrdersPage() {
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-bakery-800">Orders</h1>
+        <div className="flex items-center gap-2">
+          <h1 className="text-2xl font-bold text-bakery-800">Orders</h1>
+          {/* Live indicator */}
+          <span className="flex items-center gap-1 text-xs text-green-600 font-medium">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+            </span>
+            Live
+          </span>
+        </div>
         <button
           onClick={() => fetchOrders()}
           className="text-sm text-bakery-500 hover:text-bakery-700 transition-colors"
@@ -151,71 +185,83 @@ export default function OrdersPage() {
         </div>
       ) : (
         <div className="space-y-3">
-          {filteredOrders.map((order) => (
-            <div
-              key={order.id}
-              className={`bg-white border border-bakery-100 rounded-2xl p-4 shadow-sm transition-opacity ${
-                order.status === "done" ? "opacity-60" : ""
-              }`}
-            >
-              {/* Header row */}
-              <div className="flex items-start justify-between gap-3 mb-3">
-                <div>
-                  <div className="flex items-center gap-2 flex-wrap">
-                    {order.customerName && (
-                      <span className="font-semibold text-gray-800">
-                        {order.customerName}
+          {filteredOrders.map((order) => {
+            const isNew = newOrderIds.has(order.id);
+            return (
+              <div
+                key={order.id}
+                className={`bg-white border rounded-2xl p-4 shadow-sm transition-all ${
+                  order.status === "done" ? "opacity-60" : ""
+                } ${
+                  isNew
+                    ? "order-new border-bakery-300 shadow-bakery-100 shadow-md"
+                    : "border-bakery-100"
+                }`}
+              >
+                {/* Header row */}
+                <div className="flex items-start justify-between gap-3 mb-3">
+                  <div>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      {order.customerName && (
+                        <span className="font-semibold text-gray-800">
+                          {order.customerName}
+                        </span>
+                      )}
+                      <span className="text-xs text-gray-400">
+                        #{order.id.slice(-6).toUpperCase()}
                       </span>
-                    )}
-                    <span className="text-xs text-gray-400">
-                      #{order.id.slice(-6).toUpperCase()}
-                    </span>
+                      {isNew && (
+                        <span className="new-badge text-xs font-bold px-2 py-0.5 rounded-full bg-bakery-500 text-white">
+                          NEW
+                        </span>
+                      )}
+                    </div>
+                    <div className="text-xs text-gray-400 mt-0.5">
+                      {formatDate(order.createdAt)} at {formatTime(order.createdAt)}
+                    </div>
                   </div>
-                  <div className="text-xs text-gray-400 mt-0.5">
-                    {formatDate(order.createdAt)} at {formatTime(order.createdAt)}
-                  </div>
-                </div>
-                <div className="flex items-center gap-2 shrink-0">
-                  <span
-                    className={`text-xs font-medium px-2.5 py-1 rounded-full border ${STATUS_COLORS[order.status]}`}
-                  >
-                    {STATUS_LABELS[order.status]}
-                  </span>
-                  {STATUS_NEXT[order.status] && (
-                    <button
-                      onClick={() => advanceStatus(order)}
-                      disabled={updating === order.id}
-                      className="text-xs px-3 py-1 bg-bakery-500 hover:bg-bakery-600 disabled:opacity-50 text-white rounded-full font-medium transition-colors"
+                  <div className="flex items-center gap-2 shrink-0">
+                    <span
+                      className={`text-xs font-medium px-2.5 py-1 rounded-full border ${STATUS_COLORS[order.status]}`}
                     >
-                      {updating === order.id
-                        ? "…"
-                        : STATUS_NEXT_LABEL[order.status]}
-                    </button>
-                  )}
+                      {STATUS_LABELS[order.status]}
+                    </span>
+                    {STATUS_NEXT[order.status] && (
+                      <button
+                        onClick={() => advanceStatus(order)}
+                        disabled={updating === order.id}
+                        className="text-xs px-3 py-1 bg-bakery-500 hover:bg-bakery-600 disabled:opacity-50 text-white rounded-full font-medium transition-colors"
+                      >
+                        {updating === order.id
+                          ? "…"
+                          : STATUS_NEXT_LABEL[order.status]}
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Items */}
+                <ul className="text-sm text-gray-700 space-y-0.5 mb-2">
+                  {order.items.map((item, i) => (
+                    <li key={i} className="flex justify-between">
+                      <span>
+                        {item.menuItemName} × {item.quantity}
+                      </span>
+                      <span className="text-gray-500">
+                        ${formatPrice(item.unitPrice * item.quantity)}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+
+                {/* Total */}
+                <div className="border-t border-bakery-100 pt-2 flex justify-between text-sm font-semibold text-bakery-800">
+                  <span>Total</span>
+                  <span>${formatPrice(order.total)}</span>
                 </div>
               </div>
-
-              {/* Items */}
-              <ul className="text-sm text-gray-700 space-y-0.5 mb-2">
-                {order.items.map((item, i) => (
-                  <li key={i} className="flex justify-between">
-                    <span>
-                      {item.menuItemName} × {item.quantity}
-                    </span>
-                    <span className="text-gray-500">
-                      ${formatPrice(item.unitPrice * item.quantity)}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-
-              {/* Total */}
-              <div className="border-t border-bakery-100 pt-2 flex justify-between text-sm font-semibold text-bakery-800">
-                <span>Total</span>
-                <span>${formatPrice(order.total)}</span>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>

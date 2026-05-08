@@ -6,7 +6,7 @@ import "./globals.css";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Bakery Popup 🧁",
+  title: "Glaciare 🧁",
   description: "Fresh-baked goods, right from the popup",
 };
 
@@ -22,7 +22,7 @@ export default function RootLayout({
         <header className="bg-gradient-to-r from-bakery-700 to-bakery-500 text-white shadow-md">
           <div className="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
             <Link href="/" className="text-xl font-bold tracking-tight hover:opacity-90">
-              🧁 Bakery Popup
+              🧁 Glaciare
             </Link>
             <nav className="flex gap-1 text-sm font-medium">
               <Link

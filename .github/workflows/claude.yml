@@ -1,0 +1,53 @@
+name: Claude Code
+
+on:
+  issue_comment:
+    types: [created]
+
+jobs:
+  claude:
+    if: contains(github.event.comment.body, '@claude')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+      id-token: write
+      actions: read # Required for Claude to read CI results on PRs
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 1
+
+      - name: Resolve Friday model from comment
+        id: friday_model
+        shell: bash
+        env:
+          COMMENT_BODY: ${{ github.event.comment.body }}
+        run: |
+          set -euo pipefail
+          DEFAULT='claude-sonnet-4-6'
+          MODEL="$DEFAULT"
+          RX='<!--friday-model:([^>]+)-->'
+          if [[ "$COMMENT_BODY" =~ $RX ]]; then
+            CANDIDATE="${BASH_REMATCH[1]}"
+            case "$CANDIDATE" in
+              claude-opus-4-6|claude-sonnet-4-6) MODEL="$CANDIDATE" ;;
+            esac
+          fi
+          echo "model=$MODEL" >> "$GITHUB_OUTPUT"
+
+      - name: Run Claude Code
+        id: claude
+        uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          settings: |
+            {
+              "allowedTools": ["npm_install", "Bash(npm run build:web)", "Bash(npx tsc --noEmit)"]
+            }
+          claude_args: |
+            --model ${{ steps.friday_model.outputs.model }}
+            --system-prompt "When responding on GitHub issues, focus on planning, analysis, and discussion. Do NOT create branches, push code, or open PRs unless the user explicitly asks you to implement, build it, or create a PR. When asked to plan, structure your response with: Overview, Technical Approach, Files to Change, Implementation Steps, and Testing Strategy. IMPORTANT: Before creating any PR or pushing any branch, you MUST run 'npm run build:web' to verify the build passes. Fix any errors before pushing."
+

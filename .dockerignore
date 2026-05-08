@@ -1,0 +1,33 @@
+# Version control
+.git
+.gitignore
+
+# Dependencies (re-installed in the Docker build)
+node_modules
+
+# Next.js build output (rebuilt in Docker)
+.next
+
+# Environment files (secrets should be injected at runtime, not baked in)
+.env
+.env.*
+!.env.example
+
+# Editor and OS files
+.DS_Store
+*.pem
+.vscode
+.idea
+
+# Logs
+*.log
+
+# Vercel
+.vercel
+
+# TypeScript type-checking cache
+*.tsbuildinfo
+next-env.d.ts
+
+# CI / GitHub Actions
+.github

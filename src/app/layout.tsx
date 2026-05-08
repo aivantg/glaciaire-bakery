@@ -6,7 +6,7 @@ import "./globals.css";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Bakery Popup",
+  title: "Bakery Popup 🧁",
   description: "Fresh-baked goods, right from the popup",
 };
 
@@ -19,29 +19,29 @@ export default function RootLayout({
     <html lang="en">
       <body className={`${inter.className} bg-bakery-50 min-h-screen`}>
         {/* Top nav */}
-        <header className="bg-bakery-700 text-white shadow-md">
+        <header className="bg-gradient-to-r from-bakery-700 to-bakery-500 text-white shadow-md">
           <div className="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
             <Link href="/" className="text-xl font-bold tracking-tight hover:opacity-90">
-              🥐 Bakery Popup
+              🧁 Bakery Popup
             </Link>
-            <nav className="flex gap-4 text-sm font-medium">
+            <nav className="flex gap-1 text-sm font-medium">
               <Link
                 href="/order"
-                className="px-3 py-1.5 rounded-md hover:bg-bakery-600 transition-colors"
+                className="px-3 py-1.5 rounded-full hover:bg-white/20 transition-colors"
               >
-                Place Order
+                Order
               </Link>
               <Link
                 href="/orders"
-                className="px-3 py-1.5 rounded-md hover:bg-bakery-600 transition-colors"
+                className="px-3 py-1.5 rounded-full hover:bg-white/20 transition-colors"
               >
                 Orders
               </Link>
               <Link
                 href="/menu"
-                className="px-3 py-1.5 rounded-md hover:bg-bakery-600 transition-colors"
+                className="px-3 py-1.5 rounded-full hover:bg-white/20 transition-colors"
               >
-                Manage Menu
+                Menu
               </Link>
             </nav>
           </div>

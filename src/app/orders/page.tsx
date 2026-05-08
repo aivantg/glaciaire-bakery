@@ -29,7 +29,7 @@ const STATUS_LABELS: Record<OrderStatus, string> = {
 
 const STATUS_COLORS: Record<OrderStatus, string> = {
   pending: "bg-yellow-100 text-yellow-800 border-yellow-200",
-  in_progress: "bg-blue-100 text-blue-800 border-blue-200",
+  in_progress: "bg-bakery-100 text-bakery-800 border-bakery-200",
   done: "bg-green-100 text-green-800 border-green-200",
 };
 
@@ -67,7 +67,6 @@ export default function OrdersPage() {
 
   useEffect(() => {
     fetchOrders();
-    // Poll every 15 seconds for new orders
     const interval = setInterval(fetchOrders, 15000);
     return () => clearInterval(interval);
   }, [fetchOrders]);
@@ -107,20 +106,20 @@ export default function OrdersPage() {
         <h1 className="text-2xl font-bold text-bakery-800">Orders</h1>
         <button
           onClick={() => fetchOrders()}
-          className="text-sm text-bakery-600 hover:text-bakery-800 transition-colors"
+          className="text-sm text-bakery-500 hover:text-bakery-700 transition-colors"
         >
           ↻ Refresh
         </button>
       </div>
 
-      {/* Status summary chips */}
+      {/* Status filter chips */}
       <div className="flex flex-wrap gap-2 mb-5">
         <button
           onClick={() => setFilter("all")}
           className={`px-3 py-1.5 rounded-full text-sm font-medium border transition-colors ${
             filter === "all"
-              ? "bg-bakery-700 text-white border-bakery-700"
-              : "border-gray-300 hover:bg-gray-50"
+              ? "bg-bakery-600 text-white border-bakery-600"
+              : "border-bakery-200 text-bakery-700 hover:bg-bakery-50"
           }`}
         >
           All ({orders.length})
@@ -131,8 +130,8 @@ export default function OrdersPage() {
             onClick={() => setFilter(s)}
             className={`px-3 py-1.5 rounded-full text-sm font-medium border transition-colors ${
               filter === s
-                ? "bg-bakery-700 text-white border-bakery-700"
-                : "border-gray-300 hover:bg-gray-50"
+                ? "bg-bakery-600 text-white border-bakery-600"
+                : "border-bakery-200 text-bakery-700 hover:bg-bakery-50"
             }`}
           >
             {STATUS_LABELS[s]} ({counts[s] ?? 0})
@@ -141,21 +140,21 @@ export default function OrdersPage() {
       </div>
 
       {loading ? (
-        <div className="text-center py-12 text-gray-500">Loading orders…</div>
+        <div className="text-center py-12 text-bakery-400">Loading orders…</div>
       ) : error ? (
         <div className="text-center py-12 text-red-500">{error}</div>
       ) : filteredOrders.length === 0 ? (
-        <div className="text-center py-12 text-gray-400">
+        <div className="text-center py-12 text-bakery-300">
           {orders.length === 0
-            ? "No orders yet. Place one from the Order tab!"
+            ? "No orders yet. Place one from the Order tab! 🌸"
             : "No orders matching this filter."}
         </div>
       ) : (
-        <div className="space-y-4">
+        <div className="space-y-3">
           {filteredOrders.map((order) => (
             <div
               key={order.id}
-              className={`bg-white border rounded-xl p-4 shadow-sm transition-opacity ${
+              className={`bg-white border border-bakery-100 rounded-2xl p-4 shadow-sm transition-opacity ${
                 order.status === "done" ? "opacity-60" : ""
               }`}
             >
@@ -186,7 +185,7 @@ export default function OrdersPage() {
                     <button
                       onClick={() => advanceStatus(order)}
                       disabled={updating === order.id}
-                      className="text-xs px-3 py-1 bg-bakery-600 hover:bg-bakery-700 disabled:opacity-50 text-white rounded-full font-medium transition-colors"
+                      className="text-xs px-3 py-1 bg-bakery-500 hover:bg-bakery-600 disabled:opacity-50 text-white rounded-full font-medium transition-colors"
                     >
                       {updating === order.id
                         ? "…"
@@ -210,15 +209,8 @@ export default function OrdersPage() {
                 ))}
               </ul>
 
-              {/* Notes */}
-              {order.notes && (
-                <p className="text-xs text-gray-500 italic mb-2">
-                  Note: {order.notes}
-                </p>
-              )}
-
               {/* Total */}
-              <div className="border-t border-gray-100 pt-2 flex justify-between text-sm font-semibold text-gray-800">
+              <div className="border-t border-bakery-100 pt-2 flex justify-between text-sm font-semibold text-bakery-800">
                 <span>Total</span>
                 <span>${formatPrice(order.total)}</span>
               </div>

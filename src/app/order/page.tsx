@@ -19,10 +19,8 @@ export default function OrderPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Cart: menuItemId -> CartItem
   const [cart, setCart] = useState<Map<string, CartItem>>(new Map());
   const [customerName, setCustomerName] = useState("");
-  const [notes, setNotes] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
@@ -86,14 +84,12 @@ export default function OrderPage() {
             quantity,
           })),
           customerName: customerName.trim() || undefined,
-          notes: notes.trim() || undefined,
         }),
       });
 
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Order failed");
 
-      // Success — redirect to orders page
       router.push("/orders");
     } catch (e) {
       setSubmitError(e instanceof Error ? e.message : "Unknown error");
@@ -103,118 +99,94 @@ export default function OrderPage() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto">
-      <h1 className="text-2xl font-bold text-bakery-800 mb-6">Place an Order</h1>
+    <div className="max-w-lg mx-auto">
+      <h1 className="text-2xl font-bold text-bakery-800 mb-6">Place an Order 🧁</h1>
 
       {loading ? (
-        <div className="text-center py-12 text-gray-500">Loading menu…</div>
+        <div className="text-center py-12 text-bakery-400">Loading menu…</div>
       ) : error ? (
         <div className="text-center py-12 text-red-500">{error}</div>
       ) : menuItems.length === 0 ? (
-        <div className="text-center py-12 text-gray-400">
-          No items available right now. Check back soon!
+        <div className="text-center py-12 text-bakery-300">
+          No items available right now. Check back soon! 🌸
         </div>
       ) : (
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-3">
           {/* Menu items */}
-          <section>
-            <h2 className="text-base font-semibold text-gray-700 mb-3">
-              Select Items
-            </h2>
-            <div className="space-y-2">
-              {menuItems.map((item) => {
-                const qty = getQuantity(item.id);
-                return (
-                  <div
-                    key={item.id}
-                    className={`bg-white border rounded-xl p-4 flex items-center gap-4 shadow-sm transition-all ${
-                      qty > 0 ? "border-bakery-400 ring-1 ring-bakery-300" : ""
-                    }`}
-                  >
-                    <div className="flex-1 min-w-0">
-                      <div className="font-semibold text-gray-800">
-                        {item.name}
+          <div className="space-y-2">
+            {menuItems.map((item) => {
+              const qty = getQuantity(item.id);
+              return (
+                <div
+                  key={item.id}
+                  className={`bg-white border-2 rounded-2xl p-4 flex items-center gap-4 shadow-sm transition-all ${
+                    qty > 0
+                      ? "border-bakery-300 bg-bakery-50"
+                      : "border-transparent"
+                  }`}
+                >
+                  <div className="flex-1 min-w-0">
+                    <div className="font-semibold text-gray-800">{item.name}</div>
+                    {item.description && (
+                      <div className="text-sm text-gray-400 mt-0.5">
+                        {item.description}
                       </div>
-                      {item.description && (
-                        <div className="text-sm text-gray-500 mt-0.5">
-                          {item.description}
-                        </div>
-                      )}
-                    </div>
-                    <div className="font-semibold text-bakery-700 shrink-0">
+                    )}
+                    <div className="text-sm font-medium text-bakery-600 mt-1">
                       ${formatPrice(item.price)}
                     </div>
-                    {/* Quantity selector */}
-                    <div className="flex items-center gap-2 shrink-0">
-                      <button
-                        type="button"
-                        onClick={() => setQuantity(item, qty - 1)}
-                        disabled={qty === 0}
-                        className="w-8 h-8 flex items-center justify-center rounded-full border border-gray-300 hover:bg-gray-50 disabled:opacity-30 font-bold transition-colors"
-                      >
-                        −
-                      </button>
-                      <span className="w-6 text-center font-medium">
-                        {qty}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => setQuantity(item, qty + 1)}
-                        className="w-8 h-8 flex items-center justify-center rounded-full border border-bakery-400 bg-bakery-50 hover:bg-bakery-100 font-bold text-bakery-700 transition-colors"
-                      >
-                        +
-                      </button>
-                    </div>
                   </div>
-                );
-              })}
-            </div>
-          </section>
+                  <div className="flex items-center gap-2 shrink-0">
+                    {qty > 0 && (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => setQuantity(item, qty - 1)}
+                          className="w-8 h-8 flex items-center justify-center rounded-full border-2 border-bakery-200 text-bakery-600 hover:bg-bakery-100 font-bold transition-colors"
+                        >
+                          −
+                        </button>
+                        <span className="w-6 text-center font-semibold text-bakery-700">
+                          {qty}
+                        </span>
+                      </>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => setQuantity(item, qty + 1)}
+                      className="w-9 h-9 flex items-center justify-center rounded-full bg-bakery-500 hover:bg-bakery-600 text-white text-xl font-bold shadow-sm transition-colors"
+                    >
+                      +
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
 
-          {/* Customer info */}
-          <section className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm space-y-3">
-            <h2 className="text-base font-semibold text-gray-700">
-              Order Details (optional)
-            </h2>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Name
-              </label>
-              <input
-                type="text"
-                value={customerName}
-                onChange={(e) => setCustomerName(e.target.value)}
-                placeholder="Your name"
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-bakery-400"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Notes
-              </label>
-              <textarea
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                placeholder="Allergies, special requests…"
-                rows={2}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-bakery-400 resize-none"
-              />
-            </div>
-          </section>
+          {/* Customer name */}
+          <div className="bg-white rounded-2xl p-4 shadow-sm border-2 border-transparent focus-within:border-bakery-200 transition-colors">
+            <input
+              type="text"
+              value={customerName}
+              onChange={(e) => setCustomerName(e.target.value)}
+              placeholder="Your name (optional)"
+              className="w-full text-sm text-gray-700 placeholder-gray-400 focus:outline-none bg-transparent"
+            />
+          </div>
 
           {/* Order summary */}
           {cartItems.length > 0 && (
-            <section className="bg-bakery-50 border border-bakery-200 rounded-xl p-4">
-              <h2 className="text-base font-semibold text-bakery-800 mb-2">
-                Summary
-              </h2>
+            <div className="bg-bakery-100 rounded-2xl p-4">
               <ul className="space-y-1 text-sm text-gray-700 mb-3">
                 {cartItems.map(({ menuItem, quantity }) => (
                   <li key={menuItem.id} className="flex justify-between">
                     <span>
                       {menuItem.name} × {quantity}
                     </span>
-                    <span>${formatPrice(menuItem.price * quantity)}</span>
+                    <span className="font-medium">
+                      ${formatPrice(menuItem.price * quantity)}
+                    </span>
                   </li>
                 ))}
               </ul>
@@ -222,19 +194,21 @@ export default function OrderPage() {
                 <span>Total</span>
                 <span>${formatPrice(total)}</span>
               </div>
-            </section>
+            </div>
           )}
 
           {submitError && (
-            <p className="text-sm text-red-600">{submitError}</p>
+            <p className="text-sm text-red-500">{submitError}</p>
           )}
 
           <button
             type="submit"
             disabled={submitting || cartItems.length === 0}
-            className="w-full py-3 bg-bakery-600 hover:bg-bakery-700 disabled:opacity-50 text-white rounded-xl font-semibold text-base transition-colors"
+            className="w-full py-3 bg-bakery-500 hover:bg-bakery-600 disabled:opacity-40 text-white rounded-2xl font-semibold text-base shadow-sm transition-colors"
           >
-            {submitting ? "Placing order…" : `Place Order${total > 0 ? ` — $${formatPrice(total)}` : ""}`}
+            {submitting
+              ? "Placing order…"
+              : `Place Order${total > 0 ? ` — $${formatPrice(total)}` : ""}`}
           </button>
         </form>
       )}

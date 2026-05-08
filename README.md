@@ -13,12 +13,12 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 ## Deploying with Dokku
 
-This app is configured for deployment with [Dokku](https://dokku.com/) using a **multi-stage Dockerfile**.
+This app is configured for deployment with [Dokku](https://dokku.com/) using the **Node.js buildpack**.
 
-Docker layer caching keeps re-deploys fast:
-- The dependency layer (`npm ci`) is only re-run when `package.json` or `package-lock.json` changes.
-- The build layer is only re-run when source files change.
-- The final image uses [Next.js standalone output](https://nextjs.org/docs/app/api-reference/next-config-js/output#automatically-copying-traced-files), which is minimal and self-contained.
+Dokku automatically:
+- Runs `npm install` to install dependencies (no `package-lock.json` required)
+- Runs `npm run build` to build the Next.js app
+- Uses the `Procfile` (`web: npm run start`) to start the server
 
 ### Initial server setup
 

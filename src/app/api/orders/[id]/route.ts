@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getOrderById, updateOrderStatus, OrderStatus } from "@/lib/store";
+import { isHostAuthenticatedRequest } from "@/lib/host-session";
 
 const VALID_STATUSES: OrderStatus[] = ["pending", "in_progress", "done"];
 
@@ -7,7 +8,7 @@ export async function GET(
   _request: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  const order = getOrderById(params.id);
+  const order = await getOrderById(params.id);
   if (!order) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
@@ -18,8 +19,11 @@ export async function PUT(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  const order = getOrderById(params.id);
-  if (!order) {
+  if (!isHostAuthenticatedRequest(request)) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  const existing = await getOrderById(params.id);
+  if (!existing) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
@@ -33,6 +37,6 @@ export async function PUT(
     );
   }
 
-  const updated = updateOrderStatus(params.id, status);
+  const updated = await updateOrderStatus(params.id, status);
   return NextResponse.json(updated);
 }

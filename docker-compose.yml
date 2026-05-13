@@ -1,0 +1,23 @@
+# Local development Postgres. Used only for `npm run dev`; production runs
+# against the Dokku-managed Postgres service (see README).
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: glaciare-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: bakery
+      POSTGRES_PASSWORD: bakery
+      POSTGRES_DB: bakery_popup_dev
+    ports:
+      - "5432:5432"
+    volumes:
+      - glaciare-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U bakery -d bakery_popup_dev"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  glaciare-pgdata:

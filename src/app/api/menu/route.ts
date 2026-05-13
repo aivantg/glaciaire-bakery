@@ -1,12 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAllMenuItems, createMenuItem } from "@/lib/store";
+import { isHostAuthenticatedRequest } from "@/lib/host-session";
 
 export async function GET() {
-  const items = getAllMenuItems();
+  const items = await getAllMenuItems();
   return NextResponse.json(items);
 }
 
 export async function POST(request: NextRequest) {
+  if (!isHostAuthenticatedRequest(request)) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
   const body = await request.json();
   const { name, description, price, available } = body;
 
@@ -20,7 +24,7 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const item = createMenuItem({
+  const item = await createMenuItem({
     name: name.trim(),
     description: (description ?? "").trim(),
     price: Math.round(price),

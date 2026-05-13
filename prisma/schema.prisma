@@ -1,0 +1,61 @@
+// Glaciare bakery popup — data model.
+//
+// `price` and `unitPrice` are stored in cents (Int) to avoid float drift.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model MenuItem {
+  id          String      @id @default(cuid())
+  name        String
+  description String      @default("")
+  price       Int         // cents
+  available   Boolean     @default(true)
+  createdAt   DateTime    @default(now())
+
+  orderItems  OrderItem[]
+
+  @@index([available])
+}
+
+enum OrderStatus {
+  pending
+  in_progress
+  done
+}
+
+model Order {
+  id            String      @id @default(cuid())
+  customerName  String?
+  notes         String?
+  status        OrderStatus @default(pending)
+  total         Int         // cents — snapshot of items at order time
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  items         OrderItem[]
+
+  @@index([status])
+  @@index([createdAt])
+}
+
+model OrderItem {
+  id            String   @id @default(cuid())
+  order         Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  orderId       String
+  // FK is nullable + ON DELETE SET NULL so menu items can be removed without
+  // destroying historical orders. We also snapshot the name and price.
+  menuItem      MenuItem? @relation(fields: [menuItemId], references: [id], onDelete: SetNull)
+  menuItemId    String?
+  menuItemName  String
+  quantity      Int
+  unitPrice     Int      // cents — snapshot at order time
+
+  @@index([orderId])
+}

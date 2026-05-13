@@ -1,7 +1,9 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import type { MenuItem } from "@/lib/store";
+import { useHostSession } from "@/hooks/useHostSession";
 
 function formatPrice(cents: number): string {
   return (cents / 100).toFixed(2);
@@ -26,6 +28,16 @@ const EMPTY_FORM: FormState = {
 };
 
 export default function MenuPage() {
+  const router = useRouter();
+  const { authenticated } = useHostSession();
+
+  // Gate the admin page client-side. The API still enforces auth server-side.
+  useEffect(() => {
+    if (authenticated === false) {
+      router.replace("/host?next=/menu");
+    }
+  }, [authenticated, router]);
+
   const [items, setItems] = useState<MenuItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -154,41 +166,55 @@ export default function MenuPage() {
     }
   }
 
+  const inputClass =
+    "w-full bg-transparent border-0 border-b border-ink-400/40 focus:border-ink-900 focus:outline-none font-sans text-ink-900 placeholder-ink-300 py-2";
+
+  // While we don't yet know auth state — and especially while bouncing to /host
+  // — don't flash the admin UI to a logged-out viewer.
+  if (authenticated !== true) {
+    return (
+      <div className="pt-6">
+        <p className="font-sans text-ink-400">checking access…</p>
+      </div>
+    );
+  }
+
   return (
-    <div>
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-bakery-800">Manage Menu</h1>
-        <button
-          onClick={startAdd}
-          className="px-4 py-2 bg-bakery-500 hover:bg-bakery-600 text-white rounded-full text-sm font-semibold shadow-sm transition-colors"
-        >
-          + Add Item
+    <div className="pt-6">
+      <h1 className="hero-stack text-[14vw] sm:text-[10rem]">admin</h1>
+
+      <div className="mt-8 sm:mt-10 flex flex-wrap items-end justify-between gap-3">
+        <p className="tagline text-sm sm:text-base">
+          behind the counter — add, edit, sell out.
+        </p>
+        <button onClick={startAdd} className="btn-dark">
+          + add item
         </button>
       </div>
 
-      {/* Add / Edit form */}
+      {/* Add / edit form */}
       {showForm && (
-        <div className="mb-6 bg-white border border-bakery-200 rounded-2xl p-5 shadow-sm">
-          <h2 className="text-lg font-semibold text-bakery-800 mb-4">
-            {editingId ? "Edit Item" : "New Menu Item"}
+        <div className="row-hairline py-6 my-6">
+          <h2 className="font-sans font-black text-2xl text-ink-900 mb-4">
+            {editingId ? "edit item" : "new item"}
           </h2>
-          <form onSubmit={handleSave} className="space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <form onSubmit={handleSave} className="space-y-5 max-w-2xl">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
               <div>
-                <label className="block text-sm font-medium text-gray-600 mb-1">
-                  Name *
+                <label className="block font-sans text-xs tracking-widest uppercase font-bold text-ink-600 mb-1">
+                  name *
                 </label>
                 <input
                   type="text"
                   value={form.name}
                   onChange={(e) => setForm({ ...form, name: e.target.value })}
-                  placeholder="e.g. Croissant"
-                  className="w-full border border-bakery-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-bakery-300"
+                  placeholder="e.g. croissant"
+                  className={inputClass}
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-600 mb-1">
-                  Price ($) *
+                <label className="block font-sans text-xs tracking-widest uppercase font-bold text-ink-600 mb-1">
+                  price ($) *
                 </label>
                 <input
                   type="number"
@@ -197,13 +223,13 @@ export default function MenuPage() {
                   value={form.price}
                   onChange={(e) => setForm({ ...form, price: e.target.value })}
                   placeholder="3.50"
-                  className="w-full border border-bakery-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-bakery-300"
+                  className={inputClass}
                 />
               </div>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-600 mb-1">
-                Description
+              <label className="block font-sans text-xs tracking-widest uppercase font-bold text-ink-600 mb-1">
+                description
               </label>
               <input
                 type="text"
@@ -211,112 +237,103 @@ export default function MenuPage() {
                 onChange={(e) =>
                   setForm({ ...form, description: e.target.value })
                 }
-                placeholder="Short description"
-                className="w-full border border-bakery-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-bakery-300"
+                placeholder="short description"
+                className={inputClass}
               />
             </div>
-            <div className="flex items-center gap-2">
+            <label className="flex items-center gap-2 cursor-pointer select-none font-sans text-sm font-semibold text-ink-600">
               <input
                 type="checkbox"
-                id="available"
                 checked={form.available}
                 onChange={(e) =>
                   setForm({ ...form, available: e.target.checked })
                 }
-                className="h-4 w-4 accent-bakery-500 rounded"
+                className="h-4 w-4 accent-ink-900"
               />
-              <label
-                htmlFor="available"
-                className="text-sm font-medium text-gray-600"
-              >
-                Available to order
-              </label>
-            </div>
+              available to order
+            </label>
             {formError && (
-              <p className="text-sm text-red-500">{formError}</p>
+              <p className="font-sans text-red-500">{formError}</p>
             )}
-            <div className="flex gap-3">
-              <button
-                type="submit"
-                disabled={saving}
-                className="px-4 py-2 bg-bakery-500 hover:bg-bakery-600 disabled:opacity-50 text-white rounded-full text-sm font-semibold transition-colors"
-              >
-                {saving ? "Saving…" : editingId ? "Save Changes" : "Add Item"}
+            <div className="flex gap-4 items-center pt-2">
+              <button type="submit" disabled={saving} className="btn-dark">
+                {saving ? "saving…" : editingId ? "save" : "add"}
               </button>
               <button
                 type="button"
                 onClick={cancelEdit}
-                className="px-4 py-2 border border-bakery-200 text-bakery-700 hover:bg-bakery-50 rounded-full text-sm font-medium transition-colors"
+                className="link-mono"
               >
-                Cancel
+                cancel
               </button>
             </div>
           </form>
         </div>
       )}
 
-      {/* Menu item list */}
+      {/* Item list */}
       {loading ? (
-        <div className="text-center py-12 text-bakery-400">Loading menu…</div>
+        <div className="text-center py-12 font-sans text-ink-400 mt-10">
+          loading menu…
+        </div>
       ) : error ? (
-        <div className="text-center py-12 text-red-500">{error}</div>
+        <div className="text-center py-12 text-red-500 mt-10">{error}</div>
       ) : items.length === 0 ? (
-        <div className="text-center py-12 text-bakery-300">
-          No menu items yet. Add one above!
+        <div className="text-center py-16 font-sans text-ink-400 mt-10">
+          no menu items yet — add one above!
         </div>
       ) : (
-        <div className="space-y-2">
+        <ul className="list-hairline mt-10">
           {items.map((item) => (
-            <div
+            <li
               key={item.id}
-              className={`bg-white border border-bakery-100 rounded-2xl p-4 flex items-center gap-4 shadow-sm transition-opacity ${
+              className={`py-5 flex flex-wrap items-center justify-between gap-4 ${
                 item.available ? "" : "opacity-50"
               }`}
             >
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="font-semibold text-gray-800">
+              <div className="min-w-0 flex-1">
+                <div className="flex items-baseline gap-2 flex-wrap">
+                  <span className="font-sans font-extrabold text-lg text-ink-900">
                     {item.name}
                   </span>
                   {!item.available && (
-                    <span className="text-xs bg-bakery-100 text-bakery-600 px-2 py-0.5 rounded-full">
-                      Unavailable
+                    <span className="font-sans text-xs tracking-widest uppercase font-bold text-ink-400">
+                      sold out
                     </span>
                   )}
                 </div>
                 {item.description && (
-                  <p className="text-sm text-gray-400 mt-0.5">
+                  <p className="font-sans text-sm text-ink-400 mt-1">
                     {item.description}
                   </p>
                 )}
               </div>
-              <div className="text-base font-semibold text-bakery-600 shrink-0">
+              <div className="font-sans font-semibold text-ink-800 shrink-0">
                 ${formatPrice(item.price)}
               </div>
-              <div className="flex items-center gap-2 shrink-0">
+              <div className="flex items-center gap-5 shrink-0">
                 <button
                   onClick={() => toggleAvailable(item)}
-                  title={item.available ? "Mark unavailable" : "Mark available"}
-                  className="text-xs px-3 py-1 border border-bakery-200 text-bakery-600 hover:bg-bakery-50 rounded-full transition-colors"
+                  className="link-mono text-leaf-700"
                 >
-                  {item.available ? "Disable" : "Enable"}
+                  {item.available ? "disable" : "enable"}
                 </button>
                 <button
                   onClick={() => startEdit(item)}
-                  className="text-xs px-3 py-1 border border-bakery-300 text-bakery-700 hover:bg-bakery-50 rounded-full transition-colors"
+                  className="link-mono text-sky-500"
                 >
-                  Edit
+                  edit
                 </button>
                 <button
                   onClick={() => handleDelete(item.id, item.name)}
-                  className="text-xs px-3 py-1 border border-red-200 text-red-500 hover:bg-red-50 rounded-full transition-colors"
+                  className="link-mono text-bakery-500"
                 >
-                  Delete
+                  delete
                 </button>
               </div>
-            </div>
+            </li>
           ))}
-        </div>
+        </ul>
       )}
     </div>
   );

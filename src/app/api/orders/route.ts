@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getAllOrders, createOrder } from "@/lib/store";
 
 export async function GET() {
-  const orders = getAllOrders();
+  const orders = await getAllOrders();
   return NextResponse.json(orders);
 }
 
@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  const result = createOrder({ items, customerName, notes });
+  const result = await createOrder({ items, customerName, notes });
 
   if ("error" in result) {
     return NextResponse.json({ error: result.error }, { status: 400 });

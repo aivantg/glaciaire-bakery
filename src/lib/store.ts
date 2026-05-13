@@ -1,132 +1,43 @@
 /**
- * In-memory data store for the bakery popup app.
+ * Data access layer for the bakery popup app.
  *
- * This module provides a simple in-memory store using module-level singletons.
- * Data persists as long as the server is running but resets on restart.
- *
- * TO MIGRATE TO PRISMA:
- * 1. Run `npx prisma init`
- * 2. Add MenuItem and Order models to prisma/schema.prisma
- * 3. Replace the functions below with Prisma client calls
- * 4. The function signatures (inputs/outputs) stay the same — only the internals change
+ * Backed by Postgres via Prisma. All functions return plain serializable
+ * shapes (ISO strings for dates, cents for prices) so they can be returned
+ * directly from API routes.
  */
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+import { prisma } from "./db";
+import type { OrderStatus as PrismaOrderStatus } from "@prisma/client";
+
+// ─── Types (kept stable for the client) ───────────────────────────────────────
 
 export interface MenuItem {
   id: string;
   name: string;
   description: string;
-  price: number; // in cents to avoid float issues
+  price: number; // cents
   available: boolean;
   createdAt: string;
 }
 
 export interface OrderItem {
-  menuItemId: string;
+  menuItemId: string | null;
   menuItemName: string;
   quantity: number;
-  unitPrice: number; // in cents
+  unitPrice: number; // cents
 }
 
-export type OrderStatus = "pending" | "in_progress" | "done";
+export type OrderStatus = PrismaOrderStatus;
 
 export interface Order {
   id: string;
   items: OrderItem[];
-  total: number; // in cents
+  total: number; // cents
   status: OrderStatus;
   customerName?: string;
   notes?: string;
   createdAt: string;
   updatedAt: string;
-}
-
-// ─── In-memory store ──────────────────────────────────────────────────────────
-
-let menuItems: MenuItem[] = [
-  {
-    id: "seed-1",
-    name: "Croissant",
-    description: "Buttery, flaky French pastry",
-    price: 350,
-    available: true,
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: "seed-2",
-    name: "Sourdough Loaf",
-    description: "Naturally leavened with a crisp crust",
-    price: 1200,
-    available: true,
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: "seed-3",
-    name: "Blueberry Muffin",
-    description: "Loaded with fresh blueberries",
-    price: 400,
-    available: true,
-    createdAt: new Date().toISOString(),
-  },
-];
-
-let orders: Order[] = [];
-
-// ─── ID generator ─────────────────────────────────────────────────────────────
-
-function generateId(): string {
-  return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
-}
-
-// ─── Menu functions ───────────────────────────────────────────────────────────
-
-export function getAllMenuItems(): MenuItem[] {
-  return [...menuItems];
-}
-
-export function getMenuItemById(id: string): MenuItem | undefined {
-  return menuItems.find((item) => item.id === id);
-}
-
-export function createMenuItem(
-  data: Omit<MenuItem, "id" | "createdAt">
-): MenuItem {
-  const item: MenuItem = {
-    ...data,
-    id: generateId(),
-    createdAt: new Date().toISOString(),
-  };
-  menuItems.push(item);
-  return item;
-}
-
-export function updateMenuItem(
-  id: string,
-  data: Partial<Omit<MenuItem, "id" | "createdAt">>
-): MenuItem | null {
-  const index = menuItems.findIndex((item) => item.id === id);
-  if (index === -1) return null;
-  menuItems[index] = { ...menuItems[index], ...data };
-  return menuItems[index];
-}
-
-export function deleteMenuItem(id: string): boolean {
-  const before = menuItems.length;
-  menuItems = menuItems.filter((item) => item.id !== id);
-  return menuItems.length < before;
-}
-
-// ─── Order functions ──────────────────────────────────────────────────────────
-
-export function getAllOrders(): Order[] {
-  return [...orders].sort(
-    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-  );
-}
-
-export function getOrderById(id: string): Order | undefined {
-  return orders.find((order) => order.id === id);
 }
 
 export interface CreateOrderInput {
@@ -135,15 +46,146 @@ export interface CreateOrderInput {
   notes?: string;
 }
 
-export function createOrder(data: CreateOrderInput): Order | { error: string } {
-  const resolvedItems: OrderItem[] = [];
+// ─── Serializers ──────────────────────────────────────────────────────────────
+
+function serializeMenuItem(row: {
+  id: string;
+  name: string;
+  description: string;
+  price: number;
+  available: boolean;
+  createdAt: Date;
+}): MenuItem {
+  return {
+    id: row.id,
+    name: row.name,
+    description: row.description,
+    price: row.price,
+    available: row.available,
+    createdAt: row.createdAt.toISOString(),
+  };
+}
+
+type OrderWithItems = {
+  id: string;
+  customerName: string | null;
+  notes: string | null;
+  status: PrismaOrderStatus;
+  total: number;
+  createdAt: Date;
+  updatedAt: Date;
+  items: {
+    menuItemId: string | null;
+    menuItemName: string;
+    quantity: number;
+    unitPrice: number;
+  }[];
+};
+
+function serializeOrder(row: OrderWithItems): Order {
+  return {
+    id: row.id,
+    items: row.items.map((it) => ({
+      menuItemId: it.menuItemId,
+      menuItemName: it.menuItemName,
+      quantity: it.quantity,
+      unitPrice: it.unitPrice,
+    })),
+    total: row.total,
+    status: row.status,
+    customerName: row.customerName ?? undefined,
+    notes: row.notes ?? undefined,
+    createdAt: row.createdAt.toISOString(),
+    updatedAt: row.updatedAt.toISOString(),
+  };
+}
+
+// ─── Menu ─────────────────────────────────────────────────────────────────────
+
+export async function getAllMenuItems(): Promise<MenuItem[]> {
+  const rows = await prisma.menuItem.findMany({
+    orderBy: { createdAt: "asc" },
+  });
+  return rows.map(serializeMenuItem);
+}
+
+export async function getMenuItemById(id: string): Promise<MenuItem | null> {
+  const row = await prisma.menuItem.findUnique({ where: { id } });
+  return row ? serializeMenuItem(row) : null;
+}
+
+export async function createMenuItem(
+  data: Omit<MenuItem, "id" | "createdAt">
+): Promise<MenuItem> {
+  const row = await prisma.menuItem.create({ data });
+  return serializeMenuItem(row);
+}
+
+export async function updateMenuItem(
+  id: string,
+  data: Partial<Omit<MenuItem, "id" | "createdAt">>
+): Promise<MenuItem | null> {
+  try {
+    const row = await prisma.menuItem.update({ where: { id }, data });
+    return serializeMenuItem(row);
+  } catch {
+    return null;
+  }
+}
+
+export async function deleteMenuItem(id: string): Promise<boolean> {
+  try {
+    await prisma.menuItem.delete({ where: { id } });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+// ─── Orders ───────────────────────────────────────────────────────────────────
+
+export async function getAllOrders(): Promise<Order[]> {
+  const rows = await prisma.order.findMany({
+    include: { items: true },
+    orderBy: { createdAt: "desc" },
+  });
+  return rows.map(serializeOrder);
+}
+
+export async function getOrderById(id: string): Promise<Order | null> {
+  const row = await prisma.order.findUnique({
+    where: { id },
+    include: { items: true },
+  });
+  return row ? serializeOrder(row) : null;
+}
+
+export async function createOrder(
+  data: CreateOrderInput
+): Promise<Order | { error: string }> {
+  if (!data.items || data.items.length === 0) {
+    return { error: "Order must have at least one item" };
+  }
+
+  // Look up all referenced menu items in one query and validate.
+  const ids = Array.from(new Set(data.items.map((i) => i.menuItemId)));
+  const menuItems = await prisma.menuItem.findMany({
+    where: { id: { in: ids } },
+  });
+  const byId = new Map(menuItems.map((m) => [m.id, m]));
+
+  const resolvedItems: {
+    menuItemId: string;
+    menuItemName: string;
+    quantity: number;
+    unitPrice: number;
+  }[] = [];
   let total = 0;
 
   for (const { menuItemId, quantity } of data.items) {
-    const menuItem = getMenuItemById(menuItemId);
+    const menuItem = byId.get(menuItemId);
     if (!menuItem) return { error: `Menu item ${menuItemId} not found` };
-    if (!menuItem.available)
-      return { error: `${menuItem.name} is not available` };
+    if (!menuItem.available) return { error: `${menuItem.name} is not available` };
     if (quantity < 1) return { error: "Quantity must be at least 1" };
 
     resolvedItems.push({
@@ -155,34 +197,31 @@ export function createOrder(data: CreateOrderInput): Order | { error: string } {
     total += menuItem.price * quantity;
   }
 
-  if (resolvedItems.length === 0) return { error: "Order must have at least one item" };
+  const created = await prisma.order.create({
+    data: {
+      customerName: data.customerName,
+      notes: data.notes,
+      total,
+      items: { create: resolvedItems },
+    },
+    include: { items: true },
+  });
 
-  const now = new Date().toISOString();
-  const order: Order = {
-    id: generateId(),
-    items: resolvedItems,
-    total,
-    status: "pending",
-    customerName: data.customerName,
-    notes: data.notes,
-    createdAt: now,
-    updatedAt: now,
-  };
-
-  orders.push(order);
-  return order;
+  return serializeOrder(created);
 }
 
-export function updateOrderStatus(
+export async function updateOrderStatus(
   id: string,
   status: OrderStatus
-): Order | null {
-  const index = orders.findIndex((order) => order.id === id);
-  if (index === -1) return null;
-  orders[index] = {
-    ...orders[index],
-    status,
-    updatedAt: new Date().toISOString(),
-  };
-  return orders[index];
+): Promise<Order | null> {
+  try {
+    const row = await prisma.order.update({
+      where: { id },
+      data: { status },
+      include: { items: true },
+    });
+    return serializeOrder(row);
+  } catch {
+    return null;
+  }
 }

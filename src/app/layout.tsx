@@ -1,13 +1,11 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
-import Link from "next/link";
 import "./globals.css";
-
-const inter = Inter({ subsets: ["latin"] });
+import { TopNav } from "@/components/TopNav";
+import { HostFooterLink } from "@/components/HostFooterLink";
 
 export const metadata: Metadata = {
-  title: "Glaciare 🧁",
-  description: "Fresh-baked goods, right from the popup",
+  title: "Glaciare",
+  description: "Pastry + cafe pop-up",
 };
 
 export default function RootLayout({
@@ -17,38 +15,21 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={`${inter.className} bg-bakery-50 min-h-screen`}>
-        {/* Top nav */}
-        <header className="bg-gradient-to-r from-bakery-700 to-bakery-500 text-white shadow-md">
-          <div className="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
-            <Link href="/" className="text-xl font-bold tracking-tight hover:opacity-90">
-              🧁 Glaciare
-            </Link>
-            <nav className="flex gap-1 text-sm font-medium">
-              <Link
-                href="/order"
-                className="px-3 py-1.5 rounded-full hover:bg-white/20 transition-colors"
-              >
-                Order
-              </Link>
-              <Link
-                href="/orders"
-                className="px-3 py-1.5 rounded-full hover:bg-white/20 transition-colors"
-              >
-                Orders
-              </Link>
-              <Link
-                href="/menu"
-                className="px-3 py-1.5 rounded-full hover:bg-white/20 transition-colors"
-              >
-                Menu
-              </Link>
-            </nav>
-          </div>
-        </header>
+      <body className="min-h-screen flex flex-col">
+        <TopNav />
 
-        {/* Page content */}
-        <main className="max-w-4xl mx-auto px-4 py-8">{children}</main>
+        <main className="flex-1 w-full max-w-5xl mx-auto px-6 pb-12">
+          {children}
+        </main>
+
+        <footer className="text-center pt-8 pb-10 px-4">
+          <p className="font-script text-2xl text-lilac-700 italic">
+            made with love at 18 seymour st.
+          </p>
+          <div className="mt-3">
+            <HostFooterLink />
+          </div>
+        </footer>
       </body>
     </html>
   );

@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import type { MenuItem } from "@/lib/store";
+import { Squiggle } from "@/components/Squiggle";
 
 function formatPrice(cents: number): string {
   return (cents / 100).toFixed(2);
@@ -11,6 +12,22 @@ function formatPrice(cents: number): string {
 interface CartItem {
   menuItem: MenuItem;
   quantity: number;
+}
+
+// Per-item ink colors — keep the playful color-coded names from the prior design.
+const ITEM_COLORS = [
+  "#5a3a1a", // brown
+  "#d97a3a", // orange
+  "#ff8fb3", // pink
+  "#e85a3a", // coral
+  "#e09d28", // yellow
+  "#a87827", // mustard
+  "#7a4dc7", // purple
+  "#3d7348", // green
+];
+
+function colorForIndex(i: number) {
+  return ITEM_COLORS[i % ITEM_COLORS.length];
 }
 
 export default function OrderPage() {
@@ -60,6 +77,7 @@ export default function OrderPage() {
   }
 
   const cartItems = Array.from(cart.values());
+  const totalCount = cartItems.reduce((sum, { quantity }) => sum + quantity, 0);
   const total = cartItems.reduce(
     (sum, { menuItem, quantity }) => sum + menuItem.price * quantity,
     0
@@ -99,54 +117,77 @@ export default function OrderPage() {
   }
 
   return (
-    <div className="max-w-lg mx-auto">
-      <h1 className="text-2xl font-bold text-bakery-800 mb-6">Place an Order 🧁</h1>
+    <div className="pt-6">
+      <h1 className="hero-stack text-[18vw] sm:text-[14rem] leading-[0.86] tracking-tighter">
+        menu
+      </h1>
 
+      <p className="mt-8 sm:mt-10 font-sans font-bold text-ink-900 text-base sm:text-lg max-w-md">
+        Pastry + cafe pop-up <br className="sm:hidden" />
+        <span className="text-ink-400 font-medium">
+          — open whenever the oven&apos;s on.
+        </span>
+      </p>
+
+      {/* Section divider */}
+      <div className="mt-14 section-row">
+        <span className="label">drinks &amp; bakes</span>
+        <Squiggle className="flex-1 h-6" />
+      </div>
+
+      {/* Menu list */}
       {loading ? (
-        <div className="text-center py-12 text-bakery-400">Loading menu…</div>
+        <div className="text-center py-12 font-sans text-ink-400">
+          loading menu…
+        </div>
       ) : error ? (
         <div className="text-center py-12 text-red-500">{error}</div>
       ) : menuItems.length === 0 ? (
-        <div className="text-center py-12 text-bakery-300">
-          No items available right now. Check back soon! 🌸
+        <div className="text-center py-12 font-sans text-ink-400">
+          no goodies right now — check back soon!
         </div>
       ) : (
-        <form onSubmit={handleSubmit} className="space-y-3">
-          {/* Menu items */}
-          <div className="space-y-2">
-            {menuItems.map((item) => {
+        <form onSubmit={handleSubmit}>
+          <ul className="list-hairline mt-2">
+            {menuItems.map((item, idx) => {
               const qty = getQuantity(item.id);
+              const color = colorForIndex(idx);
               return (
-                <div
+                <li
                   key={item.id}
-                  className={`bg-white border-2 rounded-2xl p-4 flex items-center gap-4 shadow-sm transition-all ${
-                    qty > 0
-                      ? "border-bakery-300 bg-bakery-50"
-                      : "border-transparent"
-                  }`}
+                  className="flex items-center justify-between gap-4 py-6"
                 >
-                  <div className="flex-1 min-w-0">
-                    <div className="font-semibold text-gray-800">{item.name}</div>
+                  <div className="min-w-0 flex-1">
+                    <div
+                      className="font-sans font-extrabold text-2xl sm:text-3xl tracking-tight"
+                      style={{ color }}
+                    >
+                      {item.name}
+                    </div>
                     {item.description && (
-                      <div className="text-sm text-gray-400 mt-0.5">
+                      <div className="font-sans text-sm text-ink-400 mt-1 max-w-md">
                         {item.description}
                       </div>
                     )}
-                    <div className="text-sm font-medium text-bakery-600 mt-1">
+                    <div className="font-sans font-semibold text-sm text-ink-800 mt-1">
                       ${formatPrice(item.price)}
                     </div>
                   </div>
-                  <div className="flex items-center gap-2 shrink-0">
+                  <div className="flex items-center gap-3 shrink-0 font-sans">
                     {qty > 0 && (
                       <>
                         <button
                           type="button"
                           onClick={() => setQuantity(item, qty - 1)}
-                          className="w-8 h-8 flex items-center justify-center rounded-full border-2 border-bakery-200 text-bakery-600 hover:bg-bakery-100 font-bold transition-colors"
+                          className="counter-btn"
+                          aria-label={`decrease ${item.name}`}
                         >
                           −
                         </button>
-                        <span className="w-6 text-center font-semibold text-bakery-700">
+                        <span
+                          className="w-5 text-center font-bold text-ink-900"
+                          aria-live="polite"
+                        >
                           {qty}
                         </span>
                       </>
@@ -154,62 +195,61 @@ export default function OrderPage() {
                     <button
                       type="button"
                       onClick={() => setQuantity(item, qty + 1)}
-                      className="w-9 h-9 flex items-center justify-center rounded-full bg-bakery-500 hover:bg-bakery-600 text-white text-xl font-bold shadow-sm transition-colors"
+                      className="counter-btn"
+                      style={{ color }}
+                      aria-label={`add ${item.name}`}
                     >
                       +
                     </button>
                   </div>
-                </div>
+                </li>
               );
             })}
-          </div>
+          </ul>
 
-          {/* Customer name */}
-          <div className="bg-white rounded-2xl p-4 shadow-sm border-2 border-transparent focus-within:border-bakery-200 transition-colors">
-            <input
-              type="text"
-              value={customerName}
-              onChange={(e) => setCustomerName(e.target.value)}
-              placeholder="Your name (optional)"
-              className="w-full text-sm text-gray-700 placeholder-gray-400 focus:outline-none bg-transparent"
-            />
-          </div>
-
-          {/* Order summary */}
-          {cartItems.length > 0 && (
-            <div className="bg-bakery-100 rounded-2xl p-4">
-              <ul className="space-y-1 text-sm text-gray-700 mb-3">
-                {cartItems.map(({ menuItem, quantity }) => (
-                  <li key={menuItem.id} className="flex justify-between">
-                    <span>
-                      {menuItem.name} × {quantity}
-                    </span>
-                    <span className="font-medium">
-                      ${formatPrice(menuItem.price * quantity)}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-              <div className="border-t border-bakery-200 pt-2 flex justify-between font-semibold text-bakery-800">
-                <span>Total</span>
-                <span>${formatPrice(total)}</span>
-              </div>
+          {/* Name input (only after picking something) */}
+          {totalCount > 0 && (
+            <div className="mt-10 max-w-sm mx-auto">
+              <label className="block font-sans text-xs tracking-widest uppercase font-bold text-ink-600 mb-2 text-center">
+                your name
+              </label>
+              <input
+                type="text"
+                value={customerName}
+                onChange={(e) => setCustomerName(e.target.value)}
+                placeholder="who's this for?"
+                className="w-full bg-transparent border-0 border-b border-ink-400/40 focus:border-ink-900 focus:outline-none font-sans text-center text-ink-900 placeholder-ink-300 py-2"
+              />
             </div>
           )}
 
           {submitError && (
-            <p className="text-sm text-red-500">{submitError}</p>
+            <p className="font-sans text-red-500 text-center mt-6">
+              {submitError}
+            </p>
           )}
 
-          <button
-            type="submit"
-            disabled={submitting || cartItems.length === 0}
-            className="w-full py-3 bg-bakery-500 hover:bg-bakery-600 disabled:opacity-40 text-white rounded-2xl font-semibold text-base shadow-sm transition-colors"
-          >
-            {submitting
-              ? "Placing order…"
-              : `Place Order${total > 0 ? ` — $${formatPrice(total)}` : ""}`}
-          </button>
+          {/* CTA + view queue */}
+          <div className="mt-12 flex flex-col items-center gap-4">
+            <button
+              type="submit"
+              disabled={submitting || cartItems.length === 0}
+              className="btn-dark"
+            >
+              {submitting
+                ? "placing order…"
+                : totalCount === 0
+                ? "add something tasty"
+                : `review order (${totalCount}) — $${formatPrice(total)}`}
+            </button>
+            <button
+              type="button"
+              onClick={() => router.push("/orders")}
+              className="link-mono"
+            >
+              view queue →
+            </button>
+          </div>
         </form>
       )}
     </div>

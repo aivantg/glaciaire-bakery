@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getMenuItemById, updateMenuItem, deleteMenuItem } from "@/lib/store";
+import { isHostAuthenticatedRequest } from "@/lib/host-session";
 
 export async function GET(
   _request: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  const item = getMenuItemById(params.id);
+  const item = await getMenuItemById(params.id);
   if (!item) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
@@ -16,8 +17,11 @@ export async function PUT(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  const item = getMenuItemById(params.id);
-  if (!item) {
+  if (!isHostAuthenticatedRequest(request)) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  const existing = await getMenuItemById(params.id);
+  if (!existing) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
@@ -43,15 +47,18 @@ export async function PUT(
   }
   if (available !== undefined) updates.available = Boolean(available);
 
-  const updated = updateMenuItem(params.id, updates);
+  const updated = await updateMenuItem(params.id, updates);
   return NextResponse.json(updated);
 }
 
 export async function DELETE(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  const deleted = deleteMenuItem(params.id);
+  if (!isHostAuthenticatedRequest(request)) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  const deleted = await deleteMenuItem(params.id);
   if (!deleted) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }

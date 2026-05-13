@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import type { Order, OrderStatus } from "@/lib/store";
+import { useHostSession } from "@/hooks/useHostSession";
 
 function formatPrice(cents: number): string {
   return (cents / 100).toFixed(2);
@@ -14,23 +15,10 @@ function formatTime(iso: string): string {
   });
 }
 
-function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString([], {
-    month: "short",
-    day: "numeric",
-  });
-}
-
 const STATUS_LABELS: Record<OrderStatus, string> = {
-  pending: "Pending",
-  in_progress: "In Progress",
-  done: "Done",
-};
-
-const STATUS_COLORS: Record<OrderStatus, string> = {
-  pending: "bg-yellow-100 text-yellow-800 border-yellow-200",
-  in_progress: "bg-bakery-100 text-bakery-800 border-bakery-200",
-  done: "bg-green-100 text-green-800 border-green-200",
+  pending: "in queue",
+  in_progress: "preparing",
+  done: "ready!",
 };
 
 const STATUS_NEXT: Partial<Record<OrderStatus, OrderStatus>> = {
@@ -39,13 +27,14 @@ const STATUS_NEXT: Partial<Record<OrderStatus, OrderStatus>> = {
 };
 
 const STATUS_NEXT_LABEL: Partial<Record<OrderStatus, string>> = {
-  pending: "Start",
-  in_progress: "Mark Done ✓",
+  pending: "start",
+  in_progress: "mark ready",
 };
 
 type FilterStatus = OrderStatus | "all";
 
 export default function OrdersPage() {
+  const { authenticated } = useHostSession();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -62,13 +51,17 @@ export default function OrdersPage() {
       if (!res.ok) throw new Error("Failed to load orders");
       const data: Order[] = await res.json();
 
-      // Detect newly arrived orders (skip on first load)
       if (!isFirstFetch.current) {
-        const incoming = new Set(data.map((o) => o.id));
-        const arrived = [...incoming].filter((id) => !knownOrderIds.current.has(id));
+        const incoming = data.map((o) => o.id);
+        const arrived = incoming.filter(
+          (id) => !knownOrderIds.current.has(id)
+        );
         if (arrived.length > 0) {
-          setNewOrderIds((prev) => new Set([...prev, ...arrived]));
-          // Remove "new" highlight after 4 seconds
+          setNewOrderIds((prev) => {
+            const next = new Set(prev);
+            arrived.forEach((id) => next.add(id));
+            return next;
+          });
           setTimeout(() => {
             setNewOrderIds((prev) => {
               const next = new Set(prev);
@@ -124,145 +117,134 @@ export default function OrdersPage() {
     {} as Record<OrderStatus, number>
   );
 
+  function statusColor(s: OrderStatus) {
+    if (s === "pending") return "#e94e89";
+    if (s === "in_progress") return "#e09d28";
+    return "#3d7348";
+  }
+
   return (
-    <div>
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-2">
-          <h1 className="text-2xl font-bold text-bakery-800">Orders</h1>
-          {/* Live indicator */}
-          <span className="flex items-center gap-1 text-xs text-green-600 font-medium">
-            <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
-            </span>
-            Live
-          </span>
+    <div className="pt-6">
+      <h1 className="hero-stack text-[14vw] sm:text-[10rem]">the queue</h1>
+
+      <p className="tagline mt-8 sm:mt-10 text-sm sm:text-base">
+        if you have a mug, please bring it to the kitchen!
+      </p>
+
+      {/* Filter row + live indicator */}
+      <div className="mt-10 flex flex-wrap items-center justify-between gap-3 row-hairline py-3">
+        <div className="flex flex-wrap gap-5 font-sans text-xs tracking-widest uppercase font-bold">
+          {(["all", "pending", "in_progress", "done"] as FilterStatus[]).map(
+            (s) => {
+              const active = filter === s;
+              const label =
+                s === "all" ? "all" : STATUS_LABELS[s as OrderStatus];
+              const count =
+                s === "all" ? orders.length : counts[s as OrderStatus] ?? 0;
+              return (
+                <button
+                  key={s}
+                  onClick={() => setFilter(s)}
+                  className={`transition-colors ${
+                    active
+                      ? "text-ink-900"
+                      : "text-ink-400 hover:text-ink-900"
+                  }`}
+                >
+                  {label} ({count})
+                </button>
+              );
+            }
+          )}
         </div>
-        <button
-          onClick={() => fetchOrders()}
-          className="text-sm text-bakery-500 hover:text-bakery-700 transition-colors"
-        >
-          ↻ Refresh
-        </button>
+        <div className="flex items-center gap-2 font-sans text-xs tracking-widest uppercase text-leaf-700 font-bold">
+          <span className="relative flex h-2 w-2">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-leaf-500 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-leaf-500"></span>
+          </span>
+          live
+        </div>
       </div>
 
-      {/* Status filter chips */}
-      <div className="flex flex-wrap gap-2 mb-5">
-        <button
-          onClick={() => setFilter("all")}
-          className={`px-3 py-1.5 rounded-full text-sm font-medium border transition-colors ${
-            filter === "all"
-              ? "bg-bakery-600 text-white border-bakery-600"
-              : "border-bakery-200 text-bakery-700 hover:bg-bakery-50"
-          }`}
-        >
-          All ({orders.length})
-        </button>
-        {(["pending", "in_progress", "done"] as OrderStatus[]).map((s) => (
-          <button
-            key={s}
-            onClick={() => setFilter(s)}
-            className={`px-3 py-1.5 rounded-full text-sm font-medium border transition-colors ${
-              filter === s
-                ? "bg-bakery-600 text-white border-bakery-600"
-                : "border-bakery-200 text-bakery-700 hover:bg-bakery-50"
-            }`}
-          >
-            {STATUS_LABELS[s]} ({counts[s] ?? 0})
-          </button>
-        ))}
-      </div>
-
+      {/* Orders list */}
       {loading ? (
-        <div className="text-center py-12 text-bakery-400">Loading orders…</div>
+        <div className="text-center py-12 font-sans text-ink-400">
+          loading orders…
+        </div>
       ) : error ? (
         <div className="text-center py-12 text-red-500">{error}</div>
       ) : filteredOrders.length === 0 ? (
-        <div className="text-center py-12 text-bakery-300">
+        <div className="text-center py-16 font-sans text-ink-400">
           {orders.length === 0
-            ? "No orders yet. Place one from the Order tab! 🌸"
-            : "No orders matching this filter."}
+            ? "no orders yet — place one from the menu!"
+            : "nothing matching this filter."}
         </div>
       ) : (
-        <div className="space-y-3">
+        <ul className="list-hairline">
           {filteredOrders.map((order) => {
             const isNew = newOrderIds.has(order.id);
+            const isDone = order.status === "done";
             return (
-              <div
+              <li
                 key={order.id}
-                className={`bg-white border rounded-2xl p-4 shadow-sm transition-all ${
-                  order.status === "done" ? "opacity-60" : ""
-                } ${
-                  isNew
-                    ? "order-new border-bakery-300 shadow-bakery-100 shadow-md"
-                    : "border-bakery-100"
-                }`}
+                className={`py-6 flex items-start justify-between gap-6 ${
+                  isNew ? "order-new" : ""
+                } ${isDone ? "opacity-50" : ""}`}
               >
-                {/* Header row */}
-                <div className="flex items-start justify-between gap-3 mb-3">
-                  <div>
-                    <div className="flex items-center gap-2 flex-wrap">
-                      {order.customerName && (
-                        <span className="font-semibold text-gray-800">
-                          {order.customerName}
-                        </span>
-                      )}
-                      <span className="text-xs text-gray-400">
-                        #{order.id.slice(-6).toUpperCase()}
-                      </span>
-                      {isNew && (
-                        <span className="new-badge text-xs font-bold px-2 py-0.5 rounded-full bg-bakery-500 text-white">
-                          NEW
-                        </span>
-                      )}
-                    </div>
-                    <div className="text-xs text-gray-400 mt-0.5">
-                      {formatDate(order.createdAt)} at {formatTime(order.createdAt)}
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2 shrink-0">
-                    <span
-                      className={`text-xs font-medium px-2.5 py-1 rounded-full border ${STATUS_COLORS[order.status]}`}
-                    >
-                      {STATUS_LABELS[order.status]}
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-baseline gap-2 flex-wrap">
+                    <span className="font-sans font-black text-xl sm:text-2xl text-ink-900">
+                      {order.customerName || "guest"}
                     </span>
-                    {STATUS_NEXT[order.status] && (
-                      <button
-                        onClick={() => advanceStatus(order)}
-                        disabled={updating === order.id}
-                        className="text-xs px-3 py-1 bg-bakery-500 hover:bg-bakery-600 disabled:opacity-50 text-white rounded-full font-medium transition-colors"
-                      >
-                        {updating === order.id
-                          ? "…"
-                          : STATUS_NEXT_LABEL[order.status]}
-                      </button>
+                    <span className="font-mono text-xs text-ink-400">
+                      #{order.id.slice(-4).toUpperCase()}
+                    </span>
+                    {isNew && (
+                      <span className="new-badge font-sans text-xs tracking-widest uppercase font-bold text-bakery-500">
+                        new
+                      </span>
                     )}
                   </div>
+                  <ul className="mt-1 font-sans text-sm font-medium text-ink-800 space-y-0.5">
+                    {order.items.map((item, i) => (
+                      <li key={i}>
+                        {item.quantity}× {item.menuItemName}
+                        <span className="text-ink-400 font-normal">
+                          {" "}
+                          — ${formatPrice(item.unitPrice * item.quantity)}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                  <div className="font-mono text-xs text-ink-400 mt-1">
+                    {formatTime(order.createdAt)} · total $
+                    {formatPrice(order.total)}
+                  </div>
                 </div>
 
-                {/* Items */}
-                <ul className="text-sm text-gray-700 space-y-0.5 mb-2">
-                  {order.items.map((item, i) => (
-                    <li key={i} className="flex justify-between">
-                      <span>
-                        {item.menuItemName} × {item.quantity}
-                      </span>
-                      <span className="text-gray-500">
-                        ${formatPrice(item.unitPrice * item.quantity)}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-
-                {/* Total */}
-                <div className="border-t border-bakery-100 pt-2 flex justify-between text-sm font-semibold text-bakery-800">
-                  <span>Total</span>
-                  <span>${formatPrice(order.total)}</span>
+                <div className="flex flex-col items-end gap-2 shrink-0">
+                  <span
+                    className="status-text"
+                    style={{ color: statusColor(order.status) }}
+                  >
+                    {STATUS_LABELS[order.status]}
+                  </span>
+                  {authenticated && STATUS_NEXT[order.status] && (
+                    <button
+                      onClick={() => advanceStatus(order)}
+                      disabled={updating === order.id}
+                      className="link-mono disabled:opacity-50"
+                    >
+                      {updating === order.id
+                        ? "…"
+                        : STATUS_NEXT_LABEL[order.status]}
+                    </button>
+                  )}
                 </div>
-              </div>
+              </li>
             );
           })}
-        </div>
+        </ul>
       )}
     </div>
   );

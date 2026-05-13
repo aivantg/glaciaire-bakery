@@ -227,11 +227,11 @@ export default function MenuPage() {
     <div className="pt-6">
       <h1 className="hero-stack text-[14vw] sm:text-[10rem]">admin</h1>
 
-      <div className="mt-8 sm:mt-10 flex flex-wrap items-end justify-between gap-3">
+      <div className="mt-8 sm:mt-10 flex flex-wrap items-center sm:items-end justify-between gap-4">
         <p className="tagline text-sm sm:text-base">
           behind the counter — add, edit, sell out.
         </p>
-        <button onClick={startAdd} className="btn-dark">
+        <button onClick={startAdd} className="btn-dark shrink-0">
           + add item
         </button>
       </div>
@@ -239,9 +239,9 @@ export default function MenuPage() {
       {/* Venmo handle — shown to customers in the payment popup */}
       <form
         onSubmit={saveVenmoHandle}
-        className="row-hairline py-6 my-6 flex flex-wrap items-end gap-5"
+        className="row-hairline py-6 my-6 flex flex-wrap items-end gap-4 sm:gap-5"
       >
-        <div className="flex-1 min-w-[220px]">
+        <div className="flex-1 min-w-[180px]">
           <label className="block font-sans text-xs tracking-widest uppercase font-bold text-ink-600 mb-1">
             venmo handle
           </label>
@@ -380,13 +380,13 @@ export default function MenuPage() {
           {items.map((item) => (
             <li
               key={item.id}
-              className={`py-5 flex flex-wrap items-center justify-between gap-4 ${
+              className={`py-5 flex flex-wrap items-start sm:items-center justify-between gap-x-4 gap-y-3 ${
                 item.available ? "" : "opacity-50"
               }`}
             >
-              <div className="min-w-0 flex-1">
+              <div className="min-w-0 flex-1 basis-full sm:basis-auto">
                 <div className="flex items-baseline gap-2 flex-wrap">
-                  <span className="font-sans font-extrabold text-lg text-ink-900">
+                  <span className="font-sans font-extrabold text-lg text-ink-900 break-words">
                     {item.name}
                   </span>
                   {!item.available && (
@@ -404,7 +404,7 @@ export default function MenuPage() {
               <div className="font-sans font-semibold text-ink-800 shrink-0">
                 ${formatPrice(item.price)}
               </div>
-              <div className="flex items-center gap-5 shrink-0">
+              <div className="flex items-center gap-4 sm:gap-5 shrink-0 ml-auto">
                 <button
                   onClick={() => toggleAvailable(item)}
                   className="link-mono text-leaf-700"

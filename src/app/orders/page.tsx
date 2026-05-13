@@ -132,8 +132,8 @@ export default function OrdersPage() {
       </p>
 
       {/* Filter row + live indicator */}
-      <div className="mt-10 flex flex-wrap items-center justify-between gap-3 row-hairline py-3">
-        <div className="flex flex-wrap gap-5 font-sans text-xs tracking-widest uppercase font-bold">
+      <div className="mt-10 flex flex-wrap items-center justify-between gap-x-4 gap-y-2 row-hairline py-3">
+        <div className="flex flex-wrap gap-x-4 gap-y-2 sm:gap-5 font-sans text-xs tracking-widest uppercase font-bold">
           {(["all", "pending", "in_progress", "done"] as FilterStatus[]).map(
             (s) => {
               const active = filter === s;
@@ -187,13 +187,13 @@ export default function OrdersPage() {
             return (
               <li
                 key={order.id}
-                className={`py-6 flex items-start justify-between gap-6 ${
+                className={`py-5 sm:py-6 flex items-start justify-between gap-3 sm:gap-6 ${
                   isNew ? "order-new" : ""
                 } ${isDone ? "opacity-50" : ""}`}
               >
                 <div className="min-w-0 flex-1">
                   <div className="flex items-baseline gap-2 flex-wrap">
-                    <span className="font-sans font-black text-xl sm:text-2xl text-ink-900">
+                    <span className="font-sans font-black text-lg sm:text-2xl text-ink-900 break-words">
                       {order.customerName || "guest"}
                     </span>
                     <span className="font-mono text-xs text-ink-400">

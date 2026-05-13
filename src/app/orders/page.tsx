@@ -125,7 +125,7 @@ export default function OrdersPage() {
 
   return (
     <div className="pt-6">
-      <h1 className="hero-stack text-[14vw] sm:text-[10rem]">the queue</h1>
+      <h1 className="hero-stack text-6xl sm:text-8xl md:text-[10rem] break-words">the queue</h1>
 
       <p className="tagline mt-8 sm:mt-10 text-sm sm:text-base">
         if you have a mug, please bring it to the kitchen!

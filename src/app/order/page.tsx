@@ -144,11 +144,11 @@ export default function OrderPage() {
 
   return (
     <div className="pt-6">
-      <h1 className="hero-stack text-[18vw] sm:text-[14rem] leading-[0.86] tracking-tighter">
+      <h1 className="hero-stack text-7xl sm:text-9xl md:text-[12rem] lg:text-[14rem] leading-[0.86] tracking-tighter">
         menu
       </h1>
 
-      <p className="mt-8 sm:mt-10 font-sans font-bold text-ink-900 text-base sm:text-lg max-w-md">
+      <p className="mt-6 sm:mt-10 font-sans font-bold text-ink-900 text-base sm:text-lg max-w-md">
         Pastry + cafe pop-up <br className="sm:hidden" />
         <span className="text-ink-400 font-medium">
           — open whenever the oven&apos;s on.

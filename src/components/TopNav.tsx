@@ -16,28 +16,29 @@ export function TopNav() {
   }
 
   return (
-    <header className="max-w-5xl mx-auto w-full px-4 sm:px-6 pt-5 sm:pt-6 pb-2 flex items-center justify-between text-sm">
+    <header className="max-w-5xl mx-auto w-full px-4 sm:px-6 pt-5 sm:pt-6 pb-2 flex items-center justify-between gap-3 text-sm">
       <Link
         href="/"
-        className="flex items-center gap-2 font-sans italic font-black text-ink-900 tracking-tight text-lg hover:opacity-80"
+        className="flex items-center gap-2 min-w-0 font-sans italic font-black text-ink-900 tracking-tight text-lg hover:opacity-80"
       >
         <Image
           src={icon}
           alt=""
           width={28}
           height={28}
-          className="rounded-full"
+          className="rounded-full shrink-0"
           priority
         />
-        Glaciare
+        <span className="truncate">Glaciare</span>
       </Link>
-      <nav className="flex gap-5 uppercase tracking-widest text-ink-600 font-bold text-xs">
-        {counterpart && (
-          <Link href={counterpart.href} className="hover:text-ink-900">
-            {counterpart.label}
-          </Link>
-        )}
-      </nav>
+      {counterpart && (
+        <Link
+          href={counterpart.href}
+          className="shrink-0 uppercase tracking-widest text-ink-600 font-bold text-xs hover:text-ink-900"
+        >
+          {counterpart.label}
+        </Link>
+      )}
     </header>
   );
 }

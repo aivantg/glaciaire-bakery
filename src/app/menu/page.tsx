@@ -225,7 +225,7 @@ export default function MenuPage() {
 
   return (
     <div className="pt-6">
-      <h1 className="hero-stack text-[14vw] sm:text-[10rem]">admin</h1>
+      <h1 className="hero-stack text-6xl sm:text-8xl md:text-[10rem]">admin</h1>
 
       <div className="mt-8 sm:mt-10 flex flex-wrap items-center sm:items-end justify-between gap-4">
         <p className="tagline text-sm sm:text-base">

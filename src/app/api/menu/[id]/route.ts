@@ -2,25 +2,23 @@ import { NextRequest, NextResponse } from "next/server";
 import { getMenuItemById, updateMenuItem, deleteMenuItem } from "@/lib/store";
 import { isHostAuthenticatedRequest } from "@/lib/host-session";
 
-export async function GET(
-  _request: NextRequest,
-  { params }: { params: { id: string } }
-) {
-  const item = await getMenuItemById(params.id);
+type Context = { params: Promise<{ id: string }> };
+
+export async function GET(_request: NextRequest, { params }: Context) {
+  const { id } = await params;
+  const item = await getMenuItemById(id);
   if (!item) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
   return NextResponse.json(item);
 }
 
-export async function PUT(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function PUT(request: NextRequest, { params }: Context) {
   if (!isHostAuthenticatedRequest(request)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-  const existing = await getMenuItemById(params.id);
+  const { id } = await params;
+  const existing = await getMenuItemById(id);
   if (!existing) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
@@ -47,18 +45,16 @@ export async function PUT(
   }
   if (available !== undefined) updates.available = Boolean(available);
 
-  const updated = await updateMenuItem(params.id, updates);
+  const updated = await updateMenuItem(id, updates);
   return NextResponse.json(updated);
 }
 
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function DELETE(request: NextRequest, { params }: Context) {
   if (!isHostAuthenticatedRequest(request)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-  const deleted = await deleteMenuItem(params.id);
+  const { id } = await params;
+  const deleted = await deleteMenuItem(id);
   if (!deleted) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }

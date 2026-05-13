@@ -7,7 +7,6 @@
  */
 
 import { createHmac, timingSafeEqual } from "crypto";
-import { cookies } from "next/headers";
 import type { NextRequest } from "next/server";
 
 export const HOST_COOKIE_NAME = "glaciare_host";
@@ -60,12 +59,6 @@ function verifyCookieValue(cookieValue: string | undefined): boolean {
   const expiry = Number(value);
   if (!Number.isFinite(expiry) || expiry < Date.now()) return false;
   return true;
-}
-
-/** Use from Server Components / Route Handlers (reads request cookies). */
-export function isHostAuthenticated(): boolean {
-  const cookie = cookies().get(HOST_COOKIE_NAME)?.value;
-  return verifyCookieValue(cookie);
 }
 
 /** Use from Route Handlers that need the `NextRequest` directly. */

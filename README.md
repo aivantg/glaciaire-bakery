@@ -24,7 +24,7 @@ npm run db:seed       # inserts the starter menu items
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000).
+Open [http://localhost:5000](http://localhost:5000).
 
 The host login PIN defaults to `0000` (set in `.env.example`). Click "host
 login" at the bottom of any page to unlock the admin tab and the kitchen
@@ -67,8 +67,8 @@ dokku config:set bakery-popup HOST_PIN="your-secret-pin"
 # independent of the PIN. Strongly recommended in production.
 dokku config:set bakery-popup HOST_SESSION_SECRET="$(openssl rand -hex 32)"
 
-# Map external port 80 → container port 3000
-dokku ports:set bakery-popup http:80:3000
+# Map external port 80 → container port 5000
+dokku ports:set bakery-popup http:80:5000
 ```
 
 For HTTPS, install the Let's Encrypt plugin and run:

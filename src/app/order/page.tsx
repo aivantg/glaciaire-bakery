@@ -30,6 +30,12 @@ function colorForIndex(i: number) {
   return ITEM_COLORS[i % ITEM_COLORS.length];
 }
 
+interface VenmoPopupState {
+  handle: string;
+  amount: number; // cents
+  customerName: string;
+}
+
 export default function OrderPage() {
   const router = useRouter();
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
@@ -40,6 +46,8 @@ export default function OrderPage() {
   const [customerName, setCustomerName] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [venmoHandle, setVenmoHandle] = useState("");
+  const [venmoPopup, setVenmoPopup] = useState<VenmoPopupState | null>(null);
 
   const fetchMenu = useCallback(async () => {
     setLoading(true);
@@ -59,6 +67,15 @@ export default function OrderPage() {
   useEffect(() => {
     fetchMenu();
   }, [fetchMenu]);
+
+  useEffect(() => {
+    fetch("/api/settings")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (d && typeof d.venmoHandle === "string") setVenmoHandle(d.venmoHandle);
+      })
+      .catch(() => {});
+  }, []);
 
   function setQuantity(item: MenuItem, qty: number) {
     setCart((prev) => {
@@ -108,12 +125,21 @@ export default function OrderPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Order failed");
 
-      router.push("/orders");
+      setVenmoPopup({
+        handle: venmoHandle,
+        amount: total,
+        customerName: customerName.trim(),
+      });
     } catch (e) {
       setSubmitError(e instanceof Error ? e.message : "Unknown error");
     } finally {
       setSubmitting(false);
     }
+  }
+
+  function closeVenmoPopup() {
+    setVenmoPopup(null);
+    router.push("/orders");
   }
 
   return (
@@ -252,6 +278,107 @@ export default function OrderPage() {
           </div>
         </form>
       )}
+
+      {venmoPopup && (
+        <VenmoPopup popup={venmoPopup} onClose={closeVenmoPopup} />
+      )}
+    </div>
+  );
+}
+
+interface VenmoPopupProps {
+  popup: VenmoPopupState;
+  onClose: () => void;
+}
+
+function VenmoPopup({ popup, onClose }: VenmoPopupProps) {
+  const { handle, amount, customerName } = popup;
+  const amountStr = formatPrice(amount);
+  const hasHandle = handle.length > 0;
+  const note = customerName
+    ? `Glaciare order — ${customerName}`
+    : "Glaciare order";
+  // Venmo deep link: opens the app on mobile, falls back to the web profile.
+  const venmoUrl = hasHandle
+    ? `https://venmo.com/${encodeURIComponent(
+        handle
+      )}?txn=pay&amount=${amountStr}&note=${encodeURIComponent(note)}`
+    : null;
+
+  return (
+    <div
+      className="modal-backdrop"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="venmo-popup-title"
+      onClick={onClose}
+    >
+      <div className="modal-card" onClick={(e) => e.stopPropagation()}>
+        <p className="brand-presents text-sm sm:text-base text-center">
+          order placed —
+        </p>
+        <h2
+          id="venmo-popup-title"
+          className="hero-stack text-[14vw] sm:text-6xl text-center mt-1"
+        >
+          {hasHandle ? "pay with venmo" : "thanks!"}
+        </h2>
+
+        <div className="mt-6 text-center">
+          <div className="font-sans text-xs tracking-widest uppercase font-bold text-ink-600">
+            {hasHandle ? "send" : "total"}
+          </div>
+          <div className="font-sans font-black text-4xl sm:text-5xl text-ink-900 mt-1 tracking-tight">
+            ${amountStr}
+          </div>
+        </div>
+
+        {hasHandle && venmoUrl && (
+          <div className="mt-5 text-center">
+            <div className="font-sans text-xs tracking-widest uppercase font-bold text-ink-600">
+              to
+            </div>
+            <a
+              href={venmoUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="venmo-handle text-3xl sm:text-4xl mt-1 inline-block hover:underline"
+            >
+              @{handle}
+            </a>
+          </div>
+        )}
+
+        <div className="row-hairline py-4 mt-6 text-center">
+          <p className="font-sans font-bold text-ink-900 text-base leading-snug">
+            please venmo the host
+            <br />
+            <span className="text-ink-400 font-medium">
+              and show the confirmation when you receive your item.
+            </span>
+          </p>
+        </div>
+
+        <div className="mt-6 flex flex-col items-center gap-3">
+          {hasHandle && venmoUrl ? (
+            <a
+              href={venmoUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn-dark"
+            >
+              open venmo
+            </a>
+          ) : (
+            <button type="button" onClick={onClose} className="btn-dark">
+              got it
+            </button>
+          )}
+          <button type="button" onClick={onClose} className="link-mono">
+            done — view queue →
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

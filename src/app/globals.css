@@ -169,6 +169,53 @@ body {
   font-size: 0.78rem;
 }
 
+/* ── Venmo handoff modal ────────────────────────────────────────────────────── */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(10, 10, 10, 0.45);
+  backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.25rem;
+  z-index: 50;
+  animation: fadeIn 0.18s ease-out;
+}
+.modal-card {
+  background: var(--lilac);
+  border: 1.5px solid var(--ink);
+  border-radius: 1.5rem;
+  width: 100%;
+  max-width: 26rem;
+  padding: 2rem 1.75rem;
+  box-shadow: 0 18px 60px -10px rgba(10, 10, 10, 0.45);
+  animation: popIn 0.25s cubic-bezier(0.2, 0.9, 0.3, 1.25);
+  position: relative;
+}
+.venmo-handle {
+  font-family: "Archivo Black", "Inter", sans-serif;
+  font-weight: 900;
+  letter-spacing: -0.03em;
+  color: #3d95ce; /* Venmo-ish blue */
+  text-transform: lowercase;
+  word-break: break-all;
+}
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes popIn {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
 /* ── Order arrival highlight ────────────────────────────────────────────────── */
 .order-new {
   animation: slideInDown 0.4s ease-out;

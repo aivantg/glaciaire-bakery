@@ -225,3 +225,31 @@ export async function updateOrderStatus(
     return null;
   }
 }
+
+// ─── Site settings ────────────────────────────────────────────────────────────
+
+export interface SiteSettings {
+  venmoHandle: string;
+}
+
+const SETTINGS_ID = "singleton";
+
+export async function getSiteSettings(): Promise<SiteSettings> {
+  const row = await prisma.siteSettings.upsert({
+    where: { id: SETTINGS_ID },
+    update: {},
+    create: { id: SETTINGS_ID },
+  });
+  return { venmoHandle: row.venmoHandle };
+}
+
+export async function updateSiteSettings(
+  data: Partial<SiteSettings>
+): Promise<SiteSettings> {
+  const row = await prisma.siteSettings.upsert({
+    where: { id: SETTINGS_ID },
+    update: data,
+    create: { id: SETTINGS_ID, ...data },
+  });
+  return { venmoHandle: row.venmoHandle };
+}

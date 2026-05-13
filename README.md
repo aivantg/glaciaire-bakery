@@ -94,6 +94,15 @@ On every deploy, Dokku will:
    pending migrations against the linked Postgres service)
 3. Start the `web` Procfile entry → `node server.js`
 
+The `Dockerfile` uses **BuildKit cache mounts** for the npm cache and the
+Next.js build cache, so warm deploys are dramatically faster than cold ones
+(seconds instead of a minute). Dokku 0.30+ enables BuildKit by default. On
+older versions, opt in once per app:
+
+```bash
+dokku config:set --no-restart bakery-popup DOCKER_BUILDKIT=1
+```
+
 ### Seeding production (optional, one-time)
 
 The seed script is **not** run automatically on deploy. To seed production:

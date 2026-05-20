@@ -67,10 +67,3 @@ model OrderItem {
   @@index([orderId])
 }
 
-// Singleton row for site-wide settings. We always read/write the row whose
-// id == "singleton" so we never have to manage which record is "the" settings.
-model SiteSettings {
-  id          String   @id @default("singleton")
-  venmoHandle String   @default("")
-  updatedAt   DateTime @updatedAt
-}

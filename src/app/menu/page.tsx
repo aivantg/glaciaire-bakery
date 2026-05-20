@@ -55,13 +55,6 @@ export default function MenuPage() {
   const [formError, setFormError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
-  const [venmoHandle, setVenmoHandle] = useState("");
-  const [venmoDraft, setVenmoDraft] = useState("");
-  const [venmoSaving, setVenmoSaving] = useState(false);
-  const [venmoStatus, setVenmoStatus] = useState<
-    { kind: "ok" | "error"; message: string } | null
-  >(null);
-
   const fetchItems = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -79,43 +72,6 @@ export default function MenuPage() {
   useEffect(() => {
     fetchItems();
   }, [fetchItems]);
-
-  useEffect(() => {
-    fetch("/api/settings")
-      .then((r) => (r.ok ? r.json() : null))
-      .then((d) => {
-        if (d && typeof d.venmoHandle === "string") {
-          setVenmoHandle(d.venmoHandle);
-          setVenmoDraft(d.venmoHandle);
-        }
-      })
-      .catch(() => {});
-  }, []);
-
-  async function saveVenmoHandle(e: React.FormEvent) {
-    e.preventDefault();
-    setVenmoStatus(null);
-    setVenmoSaving(true);
-    try {
-      const res = await fetch("/api/settings", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ venmoHandle: venmoDraft }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "Save failed");
-      setVenmoHandle(data.venmoHandle);
-      setVenmoDraft(data.venmoHandle);
-      setVenmoStatus({ kind: "ok", message: "saved" });
-    } catch (err) {
-      setVenmoStatus({
-        kind: "error",
-        message: err instanceof Error ? err.message : "Save failed",
-      });
-    } finally {
-      setVenmoSaving(false);
-    }
-  }
 
   function startAdd() {
     setEditingId(null);
@@ -244,55 +200,6 @@ export default function MenuPage() {
           + add item
         </button>
       </div>
-
-      {/* Venmo handle — shown to customers in the payment popup */}
-      <form
-        onSubmit={saveVenmoHandle}
-        className="row-hairline py-6 my-6 flex flex-wrap items-end gap-4 sm:gap-5"
-      >
-        <div className="flex-1 min-w-[180px]">
-          <label className="block font-sans text-xs tracking-widest uppercase font-bold text-ink-600 mb-1">
-            venmo handle
-          </label>
-          <div className="flex items-baseline gap-1">
-            <span className="font-sans font-bold text-ink-400 text-lg">@</span>
-            <input
-              type="text"
-              value={venmoDraft}
-              onChange={(e) => {
-                setVenmoDraft(e.target.value.replace(/^@/, ""));
-                setVenmoStatus(null);
-              }}
-              placeholder="your-venmo"
-              autoCapitalize="off"
-              autoCorrect="off"
-              spellCheck={false}
-              className={inputClass}
-            />
-          </div>
-          <p className="font-sans text-xs text-ink-400 mt-1">
-            shown to customers after they place an order. leave blank to hide.
-          </p>
-        </div>
-        <div className="flex items-center gap-4">
-          <button
-            type="submit"
-            disabled={venmoSaving || venmoDraft === venmoHandle}
-            className="btn-dark"
-          >
-            {venmoSaving ? "saving…" : "save"}
-          </button>
-          {venmoStatus && (
-            <span
-              className={`font-sans text-sm ${
-                venmoStatus.kind === "ok" ? "text-leaf-700" : "text-bakery-500"
-              }`}
-            >
-              {venmoStatus.message}
-            </span>
-          )}
-        </div>
-      </form>
 
       {/* Add / edit form */}
       {showForm && (

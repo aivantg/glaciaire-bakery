@@ -39,9 +39,7 @@ const SECTION_LABEL: Record<MenuCategory, string> = {
 };
 
 interface VenmoPopupState {
-  handle: string;
   amount: number; // cents
-  customerName: string;
 }
 
 type Stage = "browse" | "review";
@@ -57,7 +55,6 @@ export default function OrderPage() {
   const [stage, setStage] = useState<Stage>("browse");
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
-  const [venmoHandle, setVenmoHandle] = useState("");
   const [venmoPopup, setVenmoPopup] = useState<VenmoPopupState | null>(null);
 
   const fetchMenu = useCallback(async () => {
@@ -78,15 +75,6 @@ export default function OrderPage() {
   useEffect(() => {
     fetchMenu();
   }, [fetchMenu]);
-
-  useEffect(() => {
-    fetch("/api/settings")
-      .then((r) => (r.ok ? r.json() : null))
-      .then((d) => {
-        if (d && typeof d.venmoHandle === "string") setVenmoHandle(d.venmoHandle);
-      })
-      .catch(() => {});
-  }, []);
 
   function setQuantity(item: MenuItem, qty: number) {
     setCart((prev) => {
@@ -145,11 +133,7 @@ export default function OrderPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Order failed");
 
-      setVenmoPopup({
-        handle: venmoHandle,
-        amount: total,
-        customerName: trimmedName,
-      });
+      setVenmoPopup({ amount: total });
     } catch (e) {
       setSubmitError(e instanceof Error ? e.message : "Unknown error");
     } finally {
@@ -425,7 +409,7 @@ function ReviewPopup({
             disabled={submitting}
             className="link-mono"
           >
-            ← back to edit
+            edit order
           </button>
         </div>
       </div>
@@ -439,9 +423,7 @@ interface VenmoPopupProps {
 }
 
 function VenmoPopup({ popup, onClose }: VenmoPopupProps) {
-  const { handle, amount } = popup;
-  const amountStr = formatPrice(amount);
-  const hasHandle = handle.length > 0;
+  const amountStr = formatPrice(popup.amount);
 
   return (
     <div
@@ -483,11 +465,6 @@ function VenmoPopup({ popup, onClose }: VenmoPopupProps) {
             />
           </div>
         </div>
-        {hasHandle && (
-          <p className="mt-4 text-center venmo-handle text-2xl sm:text-3xl">
-            @{handle}
-          </p>
-        )}
 
         <div className="mt-6 flex flex-col items-center gap-3">
           <button type="button" onClick={onClose} className="btn-dark">

@@ -7,9 +7,14 @@
  */
 
 import { prisma } from "./db";
-import type { OrderStatus as PrismaOrderStatus } from "@prisma/client";
+import type {
+  OrderStatus as PrismaOrderStatus,
+  MenuCategory as PrismaMenuCategory,
+} from "@prisma/client";
 
 // ─── Types (kept stable for the client) ───────────────────────────────────────
+
+export type MenuCategory = PrismaMenuCategory;
 
 export interface MenuItem {
   id: string;
@@ -17,6 +22,7 @@ export interface MenuItem {
   description: string;
   price: number; // cents
   available: boolean;
+  category: MenuCategory;
   createdAt: string;
 }
 
@@ -54,6 +60,7 @@ function serializeMenuItem(row: {
   description: string;
   price: number;
   available: boolean;
+  category: PrismaMenuCategory;
   createdAt: Date;
 }): MenuItem {
   return {
@@ -62,6 +69,7 @@ function serializeMenuItem(row: {
     description: row.description,
     price: row.price,
     available: row.available,
+    category: row.category,
     createdAt: row.createdAt.toISOString(),
   };
 }

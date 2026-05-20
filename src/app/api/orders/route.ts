@@ -17,6 +17,16 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  if (
+    typeof customerName !== "string" ||
+    customerName.trim().length === 0
+  ) {
+    return NextResponse.json(
+      { error: "Please include a name on your order." },
+      { status: 400 }
+    );
+  }
+
   for (const item of items) {
     if (!item.menuItemId || typeof item.menuItemId !== "string") {
       return NextResponse.json(

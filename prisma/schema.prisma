@@ -1,4 +1,4 @@
-// Glaciare bakery popup — data model.
+// Glaciaire bakery popup — data model.
 //
 // `price` and `unitPrice` are stored in cents (Int) to avoid float drift.
 
@@ -11,17 +11,24 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum MenuCategory {
+  cafe
+  pastries
+}
+
 model MenuItem {
-  id          String      @id @default(cuid())
+  id          String       @id @default(cuid())
   name        String
-  description String      @default("")
-  price       Int         // cents
-  available   Boolean     @default(true)
-  createdAt   DateTime    @default(now())
+  description String       @default("")
+  price       Int          // cents
+  available   Boolean      @default(true)
+  category    MenuCategory @default(pastries)
+  createdAt   DateTime     @default(now())
 
   orderItems  OrderItem[]
 
   @@index([available])
+  @@index([category])
 }
 
 enum OrderStatus {

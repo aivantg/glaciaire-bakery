@@ -87,7 +87,7 @@ export default function HostLoginPage() {
       </a>
 
       <div className="min-h-[40vh] flex flex-col items-center justify-center">
-        <p className="brand-presents text-lg sm:text-xl">Glaciare presents</p>
+        <p className="brand-presents text-lg sm:text-xl">Glaciaire presents</p>
         <h1 className="hero-stack mt-3 text-7xl sm:text-[8rem] text-center">
           host
         </h1>

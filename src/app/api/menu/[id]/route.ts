@@ -1,6 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getMenuItemById, updateMenuItem, deleteMenuItem } from "@/lib/store";
+import {
+  getMenuItemById,
+  updateMenuItem,
+  deleteMenuItem,
+  MenuCategory,
+} from "@/lib/store";
 import { isHostAuthenticatedRequest } from "@/lib/host-session";
+
+const VALID_CATEGORIES: MenuCategory[] = ["cafe", "pastries"];
 
 type Context = { params: Promise<{ id: string }> };
 
@@ -24,7 +31,7 @@ export async function PUT(request: NextRequest, { params }: Context) {
   }
 
   const body = await request.json();
-  const { name, description, price, available } = body;
+  const { name, description, price, available, category } = body;
 
   const updates: Parameters<typeof updateMenuItem>[1] = {};
   if (name !== undefined) {
@@ -44,6 +51,15 @@ export async function PUT(request: NextRequest, { params }: Context) {
     updates.price = Math.round(price);
   }
   if (available !== undefined) updates.available = Boolean(available);
+  if (category !== undefined) {
+    if (!VALID_CATEGORIES.includes(category)) {
+      return NextResponse.json(
+        { error: `Category must be one of: ${VALID_CATEGORIES.join(", ")}` },
+        { status: 400 }
+      );
+    }
+    updates.category = category;
+  }
 
   const updated = await updateMenuItem(id, updates);
   return NextResponse.json(updated);

@@ -4,7 +4,7 @@ import { TopNav } from "@/components/TopNav";
 import { HostFooterLink } from "@/components/HostFooterLink";
 
 export const metadata: Metadata = {
-  title: "Glaciare",
+  title: "Glaciaire",
   description: "Pastry + cafe pop-up",
 };
 
@@ -30,7 +30,7 @@ export default function RootLayout({
 
         <footer className="text-center pt-8 pb-10 px-4">
           <p className="font-script text-base text-lilac-700 italic">
-            made with love at 18 seymour st.
+            made with love by aivant goyal :)
           </p>
           <div className="mt-3">
             <HostFooterLink />

@@ -2,8 +2,13 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import type { MenuItem } from "@/lib/store";
+import type { MenuItem, MenuCategory } from "@/lib/store";
 import { useHostSession } from "@/hooks/useHostSession";
+
+const CATEGORY_LABEL: Record<MenuCategory, string> = {
+  cafe: "cafe",
+  pastries: "pastries",
+};
 
 function formatPrice(cents: number): string {
   return (cents / 100).toFixed(2);
@@ -18,6 +23,7 @@ interface FormState {
   description: string;
   price: string;
   available: boolean;
+  category: MenuCategory;
 }
 
 const EMPTY_FORM: FormState = {
@@ -25,6 +31,7 @@ const EMPTY_FORM: FormState = {
   description: "",
   price: "",
   available: true,
+  category: "pastries",
 };
 
 export default function MenuPage() {
@@ -124,6 +131,7 @@ export default function MenuPage() {
       description: item.description,
       price: formatPrice(item.price),
       available: item.available,
+      category: item.category,
     });
     setFormError(null);
     setShowForm(true);
@@ -157,6 +165,7 @@ export default function MenuPage() {
         description: form.description.trim(),
         price: parsePriceToCents(form.price),
         available: form.available,
+        category: form.category,
       };
 
       const url = editingId ? `/api/menu/${editingId}` : "/api/menu";
@@ -334,6 +343,30 @@ export default function MenuPage() {
                 className={inputClass}
               />
             </div>
+            <div>
+              <label className="block font-sans text-xs tracking-widest uppercase font-bold text-ink-600 mb-2">
+                category
+              </label>
+              <div className="flex gap-2">
+                {(["cafe", "pastries"] as MenuCategory[]).map((c) => {
+                  const active = form.category === c;
+                  return (
+                    <button
+                      key={c}
+                      type="button"
+                      onClick={() => setForm({ ...form, category: c })}
+                      className={`px-4 py-2 rounded-full font-sans text-xs font-bold uppercase tracking-widest transition-colors ${
+                        active
+                          ? "bg-ink-900 text-white"
+                          : "border-2 border-ink-400/40 text-ink-600 hover:border-ink-900 hover:text-ink-900"
+                      }`}
+                    >
+                      {CATEGORY_LABEL[c]}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
             <label className="flex items-center gap-2 cursor-pointer select-none font-sans text-sm font-semibold text-ink-600">
               <input
                 type="checkbox"
@@ -388,6 +421,9 @@ export default function MenuPage() {
                 <div className="flex items-baseline gap-2 flex-wrap">
                   <span className="font-sans font-extrabold text-lg text-ink-900 break-words">
                     {item.name}
+                  </span>
+                  <span className="font-sans text-xs tracking-widest uppercase font-bold text-ink-400">
+                    {CATEGORY_LABEL[item.category]}
                   </span>
                   {!item.available && (
                     <span className="font-sans text-xs tracking-widest uppercase font-bold text-ink-400">

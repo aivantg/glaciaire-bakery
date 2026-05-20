@@ -1,9 +1,11 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
-import type { MenuItem } from "@/lib/store";
+import type { MenuItem, MenuCategory } from "@/lib/store";
 import { Squiggle } from "@/components/Squiggle";
+import venmoQr from "@/app/venmo.png";
 
 function formatPrice(cents: number): string {
   return (cents / 100).toFixed(2);
@@ -30,11 +32,19 @@ function colorForIndex(i: number) {
   return ITEM_COLORS[i % ITEM_COLORS.length];
 }
 
+const SECTION_ORDER: MenuCategory[] = ["cafe", "pastries"];
+const SECTION_LABEL: Record<MenuCategory, string> = {
+  cafe: "cafe",
+  pastries: "pastries",
+};
+
 interface VenmoPopupState {
   handle: string;
   amount: number; // cents
   customerName: string;
 }
+
+type Stage = "browse" | "review";
 
 export default function OrderPage() {
   const router = useRouter();
@@ -44,6 +54,7 @@ export default function OrderPage() {
 
   const [cart, setCart] = useState<Map<string, CartItem>>(new Map());
   const [customerName, setCustomerName] = useState("");
+  const [stage, setStage] = useState<Stage>("browse");
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [venmoHandle, setVenmoHandle] = useState("");
@@ -99,16 +110,25 @@ export default function OrderPage() {
     (sum, { menuItem, quantity }) => sum + menuItem.price * quantity,
     0
   );
+  const trimmedName = customerName.trim();
 
-  async function handleSubmit(e: React.FormEvent) {
+  function goToReview(e: React.FormEvent) {
     e.preventDefault();
+    setSubmitError(null);
     if (cartItems.length === 0) {
       setSubmitError("Add at least one item to your order.");
       return;
     }
+    if (!trimmedName) {
+      setSubmitError("Please tell us your name.");
+      return;
+    }
+    setStage("review");
+  }
+
+  async function placeOrder() {
     setSubmitError(null);
     setSubmitting(true);
-
     try {
       const res = await fetch("/api/orders", {
         method: "POST",
@@ -118,7 +138,7 @@ export default function OrderPage() {
             menuItemId: menuItem.id,
             quantity,
           })),
-          customerName: customerName.trim() || undefined,
+          customerName: trimmedName,
         }),
       });
 
@@ -128,7 +148,7 @@ export default function OrderPage() {
       setVenmoPopup({
         handle: venmoHandle,
         amount: total,
-        customerName: customerName.trim(),
+        customerName: trimmedName,
       });
     } catch (e) {
       setSubmitError(e instanceof Error ? e.message : "Unknown error");
@@ -141,6 +161,18 @@ export default function OrderPage() {
     setVenmoPopup(null);
     router.push("/orders");
   }
+
+  // Items grouped by category, preserving createdAt order within each group.
+  // We track a single running color index so colors aren't repeated across sections.
+  let colorIdx = 0;
+  const sections = SECTION_ORDER.map((cat) => {
+    const items = menuItems.filter((m) => m.category === cat);
+    const decorated = items.map((item) => ({
+      item,
+      color: colorForIndex(colorIdx++),
+    }));
+    return { category: cat, items: decorated };
+  }).filter((s) => s.items.length > 0);
 
   return (
     <div className="pt-6">
@@ -155,95 +187,98 @@ export default function OrderPage() {
         </span>
       </p>
 
-      {/* Section divider */}
-      <div className="mt-14 section-row">
-        <span className="label">drinks &amp; bakes</span>
-        <Squiggle className="flex-1 h-6" />
-      </div>
-
       {/* Menu list */}
       {loading ? (
-        <div className="text-center py-12 font-sans text-ink-400">
+        <div className="text-center py-12 font-sans text-ink-400 mt-14">
           loading menu…
         </div>
       ) : error ? (
-        <div className="text-center py-12 text-red-500">{error}</div>
+        <div className="text-center py-12 text-red-500 mt-14">{error}</div>
       ) : menuItems.length === 0 ? (
-        <div className="text-center py-12 font-sans text-ink-400">
+        <div className="text-center py-12 font-sans text-ink-400 mt-14">
           no goodies right now — check back soon!
         </div>
       ) : (
-        <form onSubmit={handleSubmit}>
-          <ul className="list-hairline mt-2">
-            {menuItems.map((item, idx) => {
-              const qty = getQuantity(item.id);
-              const color = colorForIndex(idx);
-              return (
-                <li
-                  key={item.id}
-                  className="flex items-center justify-between gap-3 sm:gap-4 py-5 sm:py-6"
-                >
-                  <div className="min-w-0 flex-1">
-                    <div
-                      className="font-sans font-extrabold text-xl sm:text-3xl tracking-tight break-words"
-                      style={{ color }}
+        <form onSubmit={goToReview}>
+          {sections.map(({ category, items }) => (
+            <div key={category} className="mt-14">
+              <div className="section-row">
+                <span className="label">{SECTION_LABEL[category]}</span>
+                <Squiggle className="flex-1 h-6" />
+              </div>
+
+              <ul className="list-hairline mt-2">
+                {items.map(({ item, color }) => {
+                  const qty = getQuantity(item.id);
+                  return (
+                    <li
+                      key={item.id}
+                      className="flex items-center justify-between gap-3 sm:gap-4 py-5 sm:py-6"
                     >
-                      {item.name}
-                    </div>
-                    {item.description && (
-                      <div className="font-sans text-sm text-ink-400 mt-1 max-w-md">
-                        {item.description}
+                      <div className="min-w-0 flex-1">
+                        <div
+                          className="font-sans font-extrabold text-xl sm:text-3xl tracking-tight break-words"
+                          style={{ color }}
+                        >
+                          {item.name}
+                        </div>
+                        {item.description && (
+                          <div className="font-sans text-sm text-ink-400 mt-1 max-w-md">
+                            {item.description}
+                          </div>
+                        )}
+                        <div className="font-sans font-semibold text-sm text-ink-800 mt-1">
+                          ${formatPrice(item.price)}
+                        </div>
                       </div>
-                    )}
-                    <div className="font-sans font-semibold text-sm text-ink-800 mt-1">
-                      ${formatPrice(item.price)}
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-1 sm:gap-3 shrink-0 font-sans">
-                    {qty > 0 && (
-                      <>
+                      <div className="flex items-center gap-1 sm:gap-3 shrink-0 font-sans">
+                        {qty > 0 && (
+                          <>
+                            <button
+                              type="button"
+                              onClick={() => setQuantity(item, qty - 1)}
+                              className="counter-btn"
+                              aria-label={`decrease ${item.name}`}
+                            >
+                              −
+                            </button>
+                            <span
+                              className="w-5 text-center font-bold text-ink-900"
+                              aria-live="polite"
+                            >
+                              {qty}
+                            </span>
+                          </>
+                        )}
                         <button
                           type="button"
-                          onClick={() => setQuantity(item, qty - 1)}
+                          onClick={() => setQuantity(item, qty + 1)}
                           className="counter-btn"
-                          aria-label={`decrease ${item.name}`}
+                          style={{ color }}
+                          aria-label={`add ${item.name}`}
                         >
-                          −
+                          +
                         </button>
-                        <span
-                          className="w-5 text-center font-bold text-ink-900"
-                          aria-live="polite"
-                        >
-                          {qty}
-                        </span>
-                      </>
-                    )}
-                    <button
-                      type="button"
-                      onClick={() => setQuantity(item, qty + 1)}
-                      className="counter-btn"
-                      style={{ color }}
-                      aria-label={`add ${item.name}`}
-                    >
-                      +
-                    </button>
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          ))}
 
           {/* Name input (only after picking something) */}
           {totalCount > 0 && (
             <div className="mt-10 max-w-sm mx-auto">
               <label className="block font-sans text-xs tracking-widest uppercase font-bold text-ink-600 mb-2 text-center">
-                your name
+                your name *
               </label>
               <input
                 type="text"
                 value={customerName}
                 onChange={(e) => setCustomerName(e.target.value)}
                 placeholder="who's this for?"
+                required
                 className="w-full bg-transparent border-0 border-b border-ink-400/40 focus:border-ink-900 focus:outline-none font-sans text-center text-ink-900 placeholder-ink-300 py-2"
               />
             </div>
@@ -259,12 +294,10 @@ export default function OrderPage() {
           <div className="mt-12 flex flex-col items-center gap-4">
             <button
               type="submit"
-              disabled={submitting || cartItems.length === 0}
+              disabled={cartItems.length === 0}
               className="btn-dark"
             >
-              {submitting
-                ? "placing order…"
-                : totalCount === 0
+              {totalCount === 0
                 ? "add something tasty"
                 : `review order (${totalCount}) — $${formatPrice(total)}`}
             </button>
@@ -279,9 +312,123 @@ export default function OrderPage() {
         </form>
       )}
 
+      {stage === "review" && (
+        <ReviewPopup
+          items={cartItems}
+          total={total}
+          customerName={trimmedName}
+          submitting={submitting}
+          error={submitError}
+          onConfirm={placeOrder}
+          onEdit={() => {
+            setStage("browse");
+            setSubmitError(null);
+          }}
+        />
+      )}
+
       {venmoPopup && (
         <VenmoPopup popup={venmoPopup} onClose={closeVenmoPopup} />
       )}
+    </div>
+  );
+}
+
+interface ReviewPopupProps {
+  items: CartItem[];
+  total: number;
+  customerName: string;
+  submitting: boolean;
+  error: string | null;
+  onConfirm: () => void;
+  onEdit: () => void;
+}
+
+function ReviewPopup({
+  items,
+  total,
+  customerName,
+  submitting,
+  error,
+  onConfirm,
+  onEdit,
+}: ReviewPopupProps) {
+  return (
+    <div
+      className="modal-backdrop"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="review-popup-title"
+      onClick={submitting ? undefined : onEdit}
+    >
+      <div className="modal-card" onClick={(e) => e.stopPropagation()}>
+        <p className="brand-presents text-sm sm:text-base text-center">
+          one more look —
+        </p>
+        <h2
+          id="review-popup-title"
+          className="hero-stack text-[12vw] sm:text-5xl text-center mt-1"
+        >
+          review order
+        </h2>
+
+        <div className="mt-5 text-center">
+          <div className="font-sans text-xs tracking-widest uppercase font-bold text-ink-600">
+            for
+          </div>
+          <div className="font-sans font-black text-2xl sm:text-3xl text-ink-900 mt-1">
+            {customerName}
+          </div>
+        </div>
+
+        <ul className="list-hairline mt-5">
+          {items.map(({ menuItem, quantity }) => (
+            <li
+              key={menuItem.id}
+              className="py-3 flex items-center justify-between gap-3 font-sans"
+            >
+              <span className="text-ink-900 font-semibold">
+                {quantity}× {menuItem.name}
+              </span>
+              <span className="text-ink-800 font-semibold">
+                ${formatPrice(menuItem.price * quantity)}
+              </span>
+            </li>
+          ))}
+        </ul>
+
+        <div className="row-hairline py-3 mt-1 flex items-center justify-between font-sans">
+          <span className="text-xs tracking-widest uppercase font-bold text-ink-600">
+            total
+          </span>
+          <span className="font-black text-2xl text-ink-900">
+            ${formatPrice(total)}
+          </span>
+        </div>
+
+        {error && (
+          <p className="font-sans text-red-500 text-center mt-4">{error}</p>
+        )}
+
+        <div className="mt-6 flex flex-col items-center gap-3">
+          <button
+            type="button"
+            onClick={onConfirm}
+            disabled={submitting}
+            className="btn-dark"
+          >
+            {submitting ? "placing order…" : "place order"}
+          </button>
+          <button
+            type="button"
+            onClick={onEdit}
+            disabled={submitting}
+            className="link-mono"
+          >
+            ← back to edit
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
@@ -292,18 +439,9 @@ interface VenmoPopupProps {
 }
 
 function VenmoPopup({ popup, onClose }: VenmoPopupProps) {
-  const { handle, amount, customerName } = popup;
+  const { handle, amount } = popup;
   const amountStr = formatPrice(amount);
   const hasHandle = handle.length > 0;
-  const note = customerName
-    ? `Glaciare order — ${customerName}`
-    : "Glaciare order";
-  // Venmo deep link: opens the app on mobile, falls back to the web profile.
-  const venmoUrl = hasHandle
-    ? `https://venmo.com/${encodeURIComponent(
-        handle
-      )}?txn=pay&amount=${amountStr}&note=${encodeURIComponent(note)}`
-    : null;
 
   return (
     <div
@@ -321,60 +459,38 @@ function VenmoPopup({ popup, onClose }: VenmoPopupProps) {
           id="venmo-popup-title"
           className="hero-stack text-[14vw] sm:text-6xl text-center mt-1"
         >
-          {hasHandle ? "pay with venmo" : "thanks!"}
+          scan to pay
         </h2>
 
-        <div className="mt-6 text-center">
+        <div className="mt-5 text-center">
           <div className="font-sans text-xs tracking-widest uppercase font-bold text-ink-600">
-            {hasHandle ? "send" : "total"}
+            total
           </div>
           <div className="font-sans font-black text-4xl sm:text-5xl text-ink-900 mt-1 tracking-tight">
             ${amountStr}
           </div>
         </div>
 
-        {hasHandle && venmoUrl && (
-          <div className="mt-5 text-center">
-            <div className="font-sans text-xs tracking-widest uppercase font-bold text-ink-600">
-              to
-            </div>
-            <a
-              href={venmoUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="venmo-handle text-3xl sm:text-4xl mt-1 inline-block hover:underline"
-            >
-              @{handle}
-            </a>
+        <div className="mt-5 flex justify-center">
+          <div className="bg-white p-3 rounded-2xl border-2 border-ink-900">
+            <Image
+              src={venmoQr}
+              alt="Venmo QR code"
+              width={208}
+              height={208}
+              className="block"
+              priority
+            />
           </div>
+        </div>
+        {hasHandle && (
+          <p className="mt-4 text-center venmo-handle text-2xl sm:text-3xl">
+            @{handle}
+          </p>
         )}
 
-        <div className="row-hairline py-4 mt-6 text-center">
-          <p className="font-sans font-bold text-ink-900 text-base leading-snug">
-            please venmo the host
-            <br />
-            <span className="text-ink-400 font-medium">
-              and show the confirmation when you receive your item.
-            </span>
-          </p>
-        </div>
-
         <div className="mt-6 flex flex-col items-center gap-3">
-          {hasHandle && venmoUrl ? (
-            <a
-              href={venmoUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="btn-dark"
-            >
-              open venmo
-            </a>
-          ) : (
-            <button type="button" onClick={onClose} className="btn-dark">
-              got it
-            </button>
-          )}
-          <button type="button" onClick={onClose} className="link-mono">
+          <button type="button" onClick={onClose} className="btn-dark">
             done — view queue →
           </button>
         </div>

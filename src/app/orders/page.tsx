@@ -1,6 +1,8 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import type { Order, OrderStatus } from "@/lib/store";
 import { useHostSession } from "@/hooks/useHostSession";
 
@@ -35,6 +37,7 @@ type FilterStatus = OrderStatus | "all";
 
 export default function OrdersPage() {
   const { authenticated } = useHostSession();
+  const pathname = usePathname();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -106,6 +109,20 @@ export default function OrdersPage() {
     }
   }
 
+  // Chronological order numbers — #1 is the very first order ever placed.
+  // `orders` is sorted createdAt desc, so number = (total - reverseIdx).
+  const orderNumbers = useMemo(() => {
+    const sorted = [...orders].sort(
+      (a, b) =>
+        new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+    );
+    const map: Record<string, number> = {};
+    sorted.forEach((o, i) => {
+      map[o.id] = i + 1;
+    });
+    return map;
+  }, [orders]);
+
   const filteredOrders =
     filter === "all" ? orders : orders.filter((o) => o.status === filter);
 
@@ -127,12 +144,22 @@ export default function OrdersPage() {
     <div className="pt-6">
       <h1 className="hero-stack text-6xl sm:text-8xl md:text-[10rem] break-words">the queue</h1>
 
-      <p className="tagline mt-8 sm:mt-10 text-sm sm:text-base">
-        if you have a mug, please bring it to the kitchen!
-      </p>
+      {authenticated === false && (
+        <div className="mt-6 row-hairline py-4 flex flex-wrap items-center justify-between gap-3">
+          <p className="font-sans text-sm text-ink-600">
+            log in as host to update order status.
+          </p>
+          <Link
+            href={`/host?next=${encodeURIComponent(pathname || "/orders")}`}
+            className="link-mono text-ink-900"
+          >
+            host login →
+          </Link>
+        </div>
+      )}
 
       {/* Filter row + live indicator */}
-      <div className="mt-10 flex flex-wrap items-center justify-between gap-x-4 gap-y-2 row-hairline py-3">
+      <div className="mt-8 sm:mt-10 flex flex-wrap items-center justify-between gap-x-4 gap-y-2 row-hairline py-3">
         <div className="flex flex-wrap gap-x-4 gap-y-2 sm:gap-5 font-sans text-xs tracking-widest uppercase font-bold">
           {(["all", "pending", "in_progress", "done"] as FilterStatus[]).map(
             (s) => {
@@ -193,11 +220,11 @@ export default function OrdersPage() {
               >
                 <div className="min-w-0 flex-1">
                   <div className="flex items-baseline gap-2 flex-wrap">
+                    <span className="font-mono text-sm sm:text-base font-bold text-ink-400">
+                      #{orderNumbers[order.id]}
+                    </span>
                     <span className="font-sans font-black text-lg sm:text-2xl text-ink-900 break-words">
                       {order.customerName || "guest"}
-                    </span>
-                    <span className="font-mono text-xs text-ink-400">
-                      #{order.id.slice(-4).toUpperCase()}
                     </span>
                     {isNew && (
                       <span className="new-badge font-sans text-xs tracking-widest uppercase font-bold text-bakery-500">

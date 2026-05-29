@@ -1,0 +1,176 @@
+name: Cursor
+
+on:
+  issues:
+    types: [opened, labeled]
+  issue_comment:
+    types: [created]
+
+jobs:
+  cursor:
+    runs-on: ubuntu-latest
+    if: |
+      (github.event_name == 'issues' && contains(toJSON(github.event.issue.labels.*.name), 'cursor')) ||
+      (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@cursor'))
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Resolve Friday model from comment
+        id: friday_model
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          COMMENT_BODY: ${{ github.event_name == 'issue_comment' && github.event.comment.body || '' }}
+        run: |
+          set -euo pipefail
+          DEFAULT='composer-2.5-fast'
+          MODEL="$DEFAULT"
+          if [ "$EVENT_NAME" = "issue_comment" ] && [ -n "$COMMENT_BODY" ]; then
+            RX='<!--friday-model:([^>]+)-->'
+            if [[ "$COMMENT_BODY" =~ $RX ]]; then
+              CANDIDATE="${BASH_REMATCH[1]}"
+              case "$CANDIDATE" in
+                composer-2.5|composer-2.5-fast|composer-2|composer-2-fast) MODEL="$CANDIDATE" ;;
+              esac
+            fi
+          fi
+          echo "model=$MODEL" >> "$GITHUB_OUTPUT"
+
+      - name: Comment workflow run link
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+        run: |
+          gh issue comment "$ISSUE_NUMBER" --body "🤖 **Cursor** is working on this — [workflow run](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})"
+
+      - name: Create branch
+        id: branch
+        run: |
+          BRANCH_NAME="cursor/issue-${{ github.event.issue.number }}-$(date +%s)"
+          git checkout -b "$BRANCH_NAME"
+          echo "branch_name=$BRANCH_NAME" >> "$GITHUB_OUTPUT"
+
+      - name: Gather full issue context
+        id: context
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+        run: |
+          # Fetch all comments
+          gh issue view "$ISSUE_NUMBER" --json comments \
+            --jq '.comments[] | "**\(.author.login):**\n\(.body)\n---"' \
+            > /tmp/issue_comments.txt || true
+
+          # Fetch linked PRs
+          gh api "repos/${{ github.repository }}/issues/$ISSUE_NUMBER/timeline" \
+            --jq '[.[] | select(.event == "cross-referenced") | select(.source.issue.pull_request != null) | "#\(.source.issue.number) \(.source.issue.title)"] | join("\n")' \
+            > /tmp/linked_prs.txt 2>/dev/null || echo "None" > /tmp/linked_prs.txt
+
+      - name: Build prompt
+        env:
+          ISSUE_TITLE: ${{ github.event.issue.title }}
+          ISSUE_BODY: ${{ github.event.issue.body }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          COMMENT_BODY: ${{ github.event.comment.body }}
+        run: |
+          cat > /tmp/prompt.md << 'HEADER'
+          You are working on a GitHub issue. Focus on planning, analysis, and discussion by default. Do NOT create branches, push code, open PRs, or run any git commands — that is handled automatically by the CI pipeline. When asked to plan, structure your response with: Overview, Technical Approach, Files to Change, Implementation Steps, and Testing Strategy. When asked to implement, make the requested changes to files directly. Do not commit — the pipeline handles that.
+          HEADER
+
+          cat >> /tmp/prompt.md << EOF
+
+          ## Issue #${ISSUE_NUMBER}: ${ISSUE_TITLE}
+
+          ### Description
+          ${ISSUE_BODY}
+
+          ### Comments
+          $(cat /tmp/issue_comments.txt)
+
+          ### Linked Pull Requests
+          $(cat /tmp/linked_prs.txt)
+          EOF
+
+          if [ -n "$COMMENT_BODY" ]; then
+            cat >> /tmp/prompt.md << EOF
+
+          ### Triggering Comment
+          ${COMMENT_BODY}
+          EOF
+          fi
+
+      - name: Install Cursor CLI
+        run: |
+          curl https://cursor.com/install -fsS | bash
+          echo "$HOME/.cursor/bin" >> $GITHUB_PATH
+
+      - name: Run Cursor Agent
+        id: cursor
+        env:
+          CURSOR_API_KEY: ${{ secrets.CURSOR_API_KEY }}
+        run: |
+          agent --model "${{ steps.friday_model.outputs.model }}" -p "$(cat /tmp/prompt.md)" --yolo 2>&1 | tee /tmp/cursor_output.txt
+
+      - name: Push changes
+        id: push
+        env:
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          BRANCH_NAME: ${{ steps.branch.outputs.branch_name }}
+        run: |
+          if [ -z "$(git status --porcelain)" ]; then
+            echo "has_changes=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          echo "has_changes=true" >> "$GITHUB_OUTPUT"
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "cursor: address issue #${ISSUE_NUMBER}"
+          git push origin "$BRANCH_NAME"
+
+      - name: Comment on issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          HAS_CHANGES: ${{ steps.push.outputs.has_changes }}
+          BRANCH_NAME: ${{ steps.branch.outputs.branch_name }}
+        run: |
+          CURSOR_OUTPUT=$(cat /tmp/cursor_output.txt 2>/dev/null || echo "No output captured")
+          # Truncate to avoid GitHub comment size limits
+          if [ ${#CURSOR_OUTPUT} -gt 60000 ]; then
+            CURSOR_OUTPUT="${CURSOR_OUTPUT:0:60000}... (truncated)"
+          fi
+
+          if [ "$HAS_CHANGES" = "true" ]; then
+            gh issue comment "$ISSUE_NUMBER" --body "$(cat <<EOF
+          🤖 **Cursor** pushed changes to \`${BRANCH_NAME}\`
+
+          <details>
+          <summary>Agent response</summary>
+
+          \`\`\`
+          ${CURSOR_OUTPUT}
+          \`\`\`
+
+          </details>
+          EOF
+          )"
+          else
+            gh issue comment "$ISSUE_NUMBER" --body "$(cat <<EOF
+          🤖 **Cursor** responded (no code changes):
+
+          \`\`\`
+          ${CURSOR_OUTPUT}
+          \`\`\`
+          EOF
+          )"
+          fi

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 
-const LOVE_ITEMS = ["cookies", "caffeine", "passionfruit", "cruffins"] as const;
+const LOVE_ITEMS = ["cookies", "matcha", "passionfruit", "cruffins"] as const;
 
 function pickRandomItem() {
   return LOVE_ITEMS[Math.floor(Math.random() * LOVE_ITEMS.length)];

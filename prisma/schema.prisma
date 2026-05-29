@@ -26,9 +26,21 @@ model MenuItem {
   createdAt   DateTime     @default(now())
 
   orderItems  OrderItem[]
+  addons      MenuItemAddon[]
 
   @@index([available])
   @@index([category])
+}
+
+model MenuItemAddon {
+  id         String   @id @default(cuid())
+  menuItemId String
+  menuItem   MenuItem @relation(fields: [menuItemId], references: [id], onDelete: Cascade)
+  name       String
+  price      Int      // cents upcharge
+  available  Boolean  @default(true)
+
+  @@index([menuItemId])
 }
 
 enum OrderStatus {
@@ -42,6 +54,7 @@ model Order {
   customerName  String?
   notes         String?
   status        OrderStatus @default(pending)
+  archived      Boolean     @default(false)
   total         Int         // cents — snapshot of items at order time
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
@@ -50,6 +63,7 @@ model Order {
 
   @@index([status])
   @@index([createdAt])
+  @@index([archived])
 }
 
 model OrderItem {
@@ -62,8 +76,17 @@ model OrderItem {
   menuItemId    String?
   menuItemName  String
   quantity      Int
-  unitPrice     Int      // cents — snapshot at order time
+  unitPrice     Int      // cents — base item price at order time
+  addons        OrderItemAddon[]
 
   @@index([orderId])
+}
+
+model OrderItemAddon {
+  id          String    @id @default(cuid())
+  orderItemId String
+  orderItem   OrderItem @relation(fields: [orderItemId], references: [id], onDelete: Cascade)
+  name        String    // snapshot
+  unitPrice   Int       // cents snapshot
 }
 

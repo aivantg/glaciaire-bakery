@@ -1,8 +1,31 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getAllMenuItems, createMenuItem, MenuCategory } from "@/lib/store";
+import {
+  getAllMenuItems,
+  createMenuItem,
+  MenuCategory,
+  type MenuItemAddonInput,
+} from "@/lib/store";
 import { isHostAuthenticatedRequest } from "@/lib/host-session";
 
 const VALID_CATEGORIES: MenuCategory[] = ["cafe", "pastries"];
+
+function parseAddons(body: unknown): MenuItemAddonInput[] | undefined {
+  if (body === undefined) return undefined;
+  if (!Array.isArray(body)) return undefined;
+  const addons: MenuItemAddonInput[] = [];
+  for (const raw of body) {
+    if (!raw || typeof raw !== "object") continue;
+    const { name, price, available } = raw as Record<string, unknown>;
+    if (typeof name !== "string" || name.trim() === "") continue;
+    if (typeof price !== "number" || price < 0) continue;
+    addons.push({
+      name: name.trim(),
+      price: Math.round(price),
+      available: available !== false,
+    });
+  }
+  return addons;
+}
 
 export async function GET() {
   const items = await getAllMenuItems();
@@ -14,7 +37,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   const body = await request.json();
-  const { name, description, price, available, category } = body;
+  const { name, description, price, available, category, addons } = body;
 
   if (!name || typeof name !== "string" || name.trim() === "") {
     return NextResponse.json({ error: "Name is required" }, { status: 400 });
@@ -34,6 +57,7 @@ export async function POST(request: NextRequest) {
     price: Math.round(price),
     available: available !== false,
     category: cat,
+    addons: parseAddons(addons),
   });
 
   return NextResponse.json(item, { status: 201 });

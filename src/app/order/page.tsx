@@ -14,6 +14,23 @@ function formatPrice(cents: number): string {
 interface CartItem {
   menuItem: MenuItem;
   quantity: number;
+  addonIds: string[];
+}
+
+function makeCartKey(menuItemId: string, addonIds: string[]): string {
+  return `${menuItemId}:${[...addonIds].sort().join(",")}`;
+}
+
+function lineUnitPrice(menuItem: MenuItem, addonIds: string[]): number {
+  const addonTotal = addonIds.reduce((sum, id) => {
+    const addon = menuItem.addons.find((a) => a.id === id);
+    return sum + (addon?.price ?? 0);
+  }, 0);
+  return menuItem.price + addonTotal;
+}
+
+function availableAddons(menuItem: MenuItem) {
+  return menuItem.addons.filter((a) => a.available);
 }
 
 // Per-item ink colors — keep the playful color-coded names from the prior design.
@@ -51,6 +68,9 @@ export default function OrderPage() {
   const [error, setError] = useState<string | null>(null);
 
   const [cart, setCart] = useState<Map<string, CartItem>>(new Map());
+  const [activeAddonIds, setActiveAddonIds] = useState<
+    Record<string, string[]>
+  >({});
   const [customerName, setCustomerName] = useState("");
   const [stage, setStage] = useState<Stage>("browse");
   const [submitting, setSubmitting] = useState(false);
@@ -76,26 +96,52 @@ export default function OrderPage() {
     fetchMenu();
   }, [fetchMenu]);
 
-  function setQuantity(item: MenuItem, qty: number) {
+  function getAddonIdsForItem(itemId: string): string[] {
+    return activeAddonIds[itemId] ?? [];
+  }
+
+  function setQuantity(item: MenuItem, addonIds: string[], qty: number) {
+    const key = makeCartKey(item.id, addonIds);
     setCart((prev) => {
       const next = new Map(prev);
       if (qty <= 0) {
-        next.delete(item.id);
+        next.delete(key);
       } else {
-        next.set(item.id, { menuItem: item, quantity: qty });
+        next.set(key, { menuItem: item, quantity: qty, addonIds });
       }
       return next;
     });
   }
 
-  function getQuantity(id: string): number {
-    return cart.get(id)?.quantity ?? 0;
+  function toggleAddon(item: MenuItem, addonId: string, checked: boolean) {
+    const currentIds = getAddonIdsForItem(item.id);
+    const nextIds = checked
+      ? [...currentIds, addonId]
+      : currentIds.filter((id) => id !== addonId);
+    const oldKey = makeCartKey(item.id, currentIds);
+    const newKey = makeCartKey(item.id, nextIds);
+
+    setActiveAddonIds((prev) => ({ ...prev, [item.id]: nextIds }));
+    setCart((prev) => {
+      const next = new Map(prev);
+      const existing = next.get(oldKey);
+      if (!existing) return next;
+      next.delete(oldKey);
+      const merged = next.get(newKey);
+      next.set(newKey, {
+        menuItem: item,
+        quantity: (merged?.quantity ?? 0) + existing.quantity,
+        addonIds: nextIds,
+      });
+      return next;
+    });
   }
 
   const cartItems = Array.from(cart.values());
   const totalCount = cartItems.reduce((sum, { quantity }) => sum + quantity, 0);
   const total = cartItems.reduce(
-    (sum, { menuItem, quantity }) => sum + menuItem.price * quantity,
+    (sum, { menuItem, quantity, addonIds }) =>
+      sum + lineUnitPrice(menuItem, addonIds) * quantity,
     0
   );
   const trimmedName = customerName.trim();
@@ -122,9 +168,10 @@ export default function OrderPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          items: cartItems.map(({ menuItem, quantity }) => ({
+          items: cartItems.map(({ menuItem, quantity, addonIds }) => ({
             menuItemId: menuItem.id,
             quantity,
+            addonIds,
           })),
           customerName: trimmedName,
         }),
@@ -193,57 +240,91 @@ export default function OrderPage() {
 
               <ul className="list-hairline mt-2">
                 {items.map(({ item, color }) => {
-                  const qty = getQuantity(item.id);
+                  const selectedAddonIds = getAddonIdsForItem(item.id);
+                  const cartKey = makeCartKey(item.id, selectedAddonIds);
+                  const qty = cart.get(cartKey)?.quantity ?? 0;
+                  const addons = availableAddons(item);
                   return (
-                    <li
-                      key={item.id}
-                      className="flex items-center justify-between gap-3 sm:gap-4 py-5 sm:py-6"
-                    >
-                      <div className="min-w-0 flex-1">
-                        <div
-                          className="font-sans font-extrabold text-xl sm:text-3xl tracking-tight break-words"
-                          style={{ color }}
-                        >
-                          {item.name}
-                        </div>
-                        {item.description && (
-                          <div className="font-sans text-sm text-ink-400 mt-1 max-w-md">
-                            {item.description}
+                    <li key={item.id} className="py-5 sm:py-6">
+                      <div className="flex items-center justify-between gap-3 sm:gap-4">
+                        <div className="min-w-0 flex-1">
+                          <div
+                            className="font-sans font-extrabold text-xl sm:text-3xl tracking-tight break-words"
+                            style={{ color }}
+                          >
+                            {item.name}
                           </div>
-                        )}
-                        <div className="font-sans font-semibold text-sm text-ink-800 mt-1">
-                          ${formatPrice(item.price)}
+                          {item.description && (
+                            <div className="font-sans text-sm text-ink-400 mt-1 max-w-md">
+                              {item.description}
+                            </div>
+                          )}
+                          <div className="font-sans font-semibold text-sm text-ink-800 mt-1">
+                            ${formatPrice(item.price)}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-1 sm:gap-3 shrink-0 font-sans">
+                          {qty > 0 && (
+                            <>
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setQuantity(item, selectedAddonIds, qty - 1)
+                                }
+                                className="counter-btn"
+                                aria-label={`decrease ${item.name}`}
+                              >
+                                −
+                              </button>
+                              <span
+                                className="w-5 text-center font-bold text-ink-900"
+                                aria-live="polite"
+                              >
+                                {qty}
+                              </span>
+                            </>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setQuantity(item, selectedAddonIds, qty + 1)
+                            }
+                            className="counter-btn"
+                            style={{ color }}
+                            aria-label={`add ${item.name}`}
+                          >
+                            +
+                          </button>
                         </div>
                       </div>
-                      <div className="flex items-center gap-1 sm:gap-3 shrink-0 font-sans">
-                        {qty > 0 && (
-                          <>
-                            <button
-                              type="button"
-                              onClick={() => setQuantity(item, qty - 1)}
-                              className="counter-btn"
-                              aria-label={`decrease ${item.name}`}
-                            >
-                              −
-                            </button>
-                            <span
-                              className="w-5 text-center font-bold text-ink-900"
-                              aria-live="polite"
-                            >
-                              {qty}
-                            </span>
-                          </>
-                        )}
-                        <button
-                          type="button"
-                          onClick={() => setQuantity(item, qty + 1)}
-                          className="counter-btn"
-                          style={{ color }}
-                          aria-label={`add ${item.name}`}
-                        >
-                          +
-                        </button>
-                      </div>
+                      {qty > 0 && addons.length > 0 && (
+                        <ul className="mt-3 ml-2 space-y-2 border-l-2 border-ink-400/30 pl-4">
+                          {addons.map((addon) => (
+                            <li key={addon.id}>
+                              <label className="flex items-center gap-2 font-sans text-sm text-ink-700 cursor-pointer">
+                                <input
+                                  type="checkbox"
+                                  checked={selectedAddonIds.includes(addon.id)}
+                                  onChange={(e) =>
+                                    toggleAddon(
+                                      item,
+                                      addon.id,
+                                      e.target.checked
+                                    )
+                                  }
+                                  className="h-4 w-4 accent-ink-900"
+                                />
+                                <span>
+                                  {addon.name}{" "}
+                                  <span className="text-ink-400">
+                                    +${formatPrice(addon.price)}
+                                  </span>
+                                </span>
+                              </label>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
                     </li>
                   );
                 })}
@@ -366,19 +447,37 @@ function ReviewPopup({
         </div>
 
         <ul className="list-hairline mt-5">
-          {items.map(({ menuItem, quantity }) => (
-            <li
-              key={menuItem.id}
-              className="py-3 flex items-center justify-between gap-3 font-sans"
-            >
-              <span className="text-ink-900 font-semibold">
-                {quantity}× {menuItem.name}
-              </span>
-              <span className="text-ink-800 font-semibold">
-                ${formatPrice(menuItem.price * quantity)}
-              </span>
-            </li>
-          ))}
+          {items.map(({ menuItem, quantity, addonIds }) => {
+            const key = makeCartKey(menuItem.id, addonIds);
+            const selectedAddons = addonIds
+              .map((id) => menuItem.addons.find((a) => a.id === id))
+              .filter(Boolean);
+            return (
+              <li
+                key={key}
+                className="py-3 flex items-start justify-between gap-3 font-sans"
+              >
+                <div>
+                  <span className="text-ink-900 font-semibold">
+                    {quantity}× {menuItem.name}
+                  </span>
+                  {selectedAddons.length > 0 && (
+                    <ul className="mt-1 text-sm text-ink-500 space-y-0.5">
+                      {selectedAddons.map((addon) => (
+                        <li key={addon!.id}>+ {addon!.name}</li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+                <span className="text-ink-800 font-semibold shrink-0">
+                  $
+                  {formatPrice(
+                    lineUnitPrice(menuItem, addonIds) * quantity
+                  )}
+                </span>
+              </li>
+            );
+          })}
         </ul>
 
         <div className="row-hairline py-3 mt-1 flex items-center justify-between font-sans">

@@ -18,12 +18,19 @@ function parsePriceToCents(value: string): number {
   return Math.round(parseFloat(value) * 100);
 }
 
+interface AddonFormRow {
+  name: string;
+  price: string;
+  available: boolean;
+}
+
 interface FormState {
   name: string;
   description: string;
   price: string;
   available: boolean;
   category: MenuCategory;
+  addons: AddonFormRow[];
 }
 
 const EMPTY_FORM: FormState = {
@@ -32,6 +39,7 @@ const EMPTY_FORM: FormState = {
   price: "",
   available: true,
   category: "pastries",
+  addons: [],
 };
 
 export default function MenuPage() {
@@ -88,9 +96,38 @@ export default function MenuPage() {
       price: formatPrice(item.price),
       available: item.available,
       category: item.category,
+      addons: item.addons.map((a) => ({
+        name: a.name,
+        price: formatPrice(a.price),
+        available: a.available,
+      })),
     });
     setFormError(null);
     setShowForm(true);
+  }
+
+  function addAddonRow() {
+    setForm((f) => ({
+      ...f,
+      addons: [...f.addons, { name: "", price: "", available: true }],
+    }));
+  }
+
+  function updateAddonRow(
+    index: number,
+    patch: Partial<AddonFormRow>
+  ) {
+    setForm((f) => ({
+      ...f,
+      addons: f.addons.map((row, i) => (i === index ? { ...row, ...patch } : row)),
+    }));
+  }
+
+  function removeAddonRow(index: number) {
+    setForm((f) => ({
+      ...f,
+      addons: f.addons.filter((_, i) => i !== index),
+    }));
   }
 
   function cancelEdit() {
@@ -114,6 +151,23 @@ export default function MenuPage() {
       return;
     }
 
+    const addonsPayload: { name: string; price: number; available: boolean }[] =
+      [];
+    for (const row of form.addons) {
+      const trimmed = row.name.trim();
+      if (!trimmed) continue;
+      const addonPrice = parseFloat(row.price);
+      if (isNaN(addonPrice) || addonPrice < 0) {
+        setFormError(`Enter a valid price for add-on "${trimmed}"`);
+        return;
+      }
+      addonsPayload.push({
+        name: trimmed,
+        price: parsePriceToCents(row.price),
+        available: row.available,
+      });
+    }
+
     setSaving(true);
     try {
       const payload = {
@@ -122,6 +176,7 @@ export default function MenuPage() {
         price: parsePriceToCents(form.price),
         available: form.available,
         category: form.category,
+        addons: addonsPayload,
       };
 
       const url = editingId ? `/api/menu/${editingId}` : "/api/menu";
@@ -285,6 +340,83 @@ export default function MenuPage() {
               />
               available to order
             </label>
+
+            <div className="pt-2">
+              <div className="flex items-center justify-between gap-4 mb-3">
+                <span className="font-sans text-xs tracking-widest uppercase font-bold text-ink-600">
+                  add-ons
+                </span>
+                <button
+                  type="button"
+                  onClick={addAddonRow}
+                  className="link-mono text-sm"
+                >
+                  + add add-on
+                </button>
+              </div>
+              {form.addons.length > 0 && (
+                <ul className="space-y-4">
+                  {form.addons.map((row, index) => (
+                    <li
+                      key={index}
+                      className="grid grid-cols-1 sm:grid-cols-[1fr_6rem_auto_auto] gap-3 items-end border-b border-ink-400/20 pb-4"
+                    >
+                      <div>
+                        <label className="block font-sans text-xs tracking-widest uppercase font-bold text-ink-600 mb-1">
+                          name
+                        </label>
+                        <input
+                          type="text"
+                          value={row.name}
+                          onChange={(e) =>
+                            updateAddonRow(index, { name: e.target.value })
+                          }
+                          placeholder="e.g. oat milk"
+                          className={inputClass}
+                        />
+                      </div>
+                      <div>
+                        <label className="block font-sans text-xs tracking-widest uppercase font-bold text-ink-600 mb-1">
+                          + ($)
+                        </label>
+                        <input
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          value={row.price}
+                          onChange={(e) =>
+                            updateAddonRow(index, { price: e.target.value })
+                          }
+                          placeholder="0.50"
+                          className={inputClass}
+                        />
+                      </div>
+                      <label className="flex items-center gap-2 cursor-pointer select-none font-sans text-xs font-semibold text-ink-600 pb-2">
+                        <input
+                          type="checkbox"
+                          checked={row.available}
+                          onChange={(e) =>
+                            updateAddonRow(index, {
+                              available: e.target.checked,
+                            })
+                          }
+                          className="h-4 w-4 accent-ink-900"
+                        />
+                        available
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => removeAddonRow(index)}
+                        className="link-mono text-bakery-500 pb-2"
+                      >
+                        remove
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+
             {formError && (
               <p className="font-sans text-red-500">{formError}</p>
             )}

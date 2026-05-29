@@ -4,10 +4,29 @@ import {
   updateMenuItem,
   deleteMenuItem,
   MenuCategory,
+  type MenuItemAddonInput,
 } from "@/lib/store";
 import { isHostAuthenticatedRequest } from "@/lib/host-session";
 
 const VALID_CATEGORIES: MenuCategory[] = ["cafe", "pastries"];
+
+function parseAddons(body: unknown): MenuItemAddonInput[] | undefined {
+  if (body === undefined) return undefined;
+  if (!Array.isArray(body)) return undefined;
+  const addons: MenuItemAddonInput[] = [];
+  for (const raw of body) {
+    if (!raw || typeof raw !== "object") continue;
+    const { name, price, available } = raw as Record<string, unknown>;
+    if (typeof name !== "string" || name.trim() === "") continue;
+    if (typeof price !== "number" || price < 0) continue;
+    addons.push({
+      name: name.trim(),
+      price: Math.round(price),
+      available: available !== false,
+    });
+  }
+  return addons;
+}
 
 type Context = { params: Promise<{ id: string }> };
 
@@ -31,7 +50,7 @@ export async function PUT(request: NextRequest, { params }: Context) {
   }
 
   const body = await request.json();
-  const { name, description, price, available, category } = body;
+  const { name, description, price, available, category, addons } = body;
 
   const updates: Parameters<typeof updateMenuItem>[1] = {};
   if (name !== undefined) {
@@ -59,6 +78,9 @@ export async function PUT(request: NextRequest, { params }: Context) {
       );
     }
     updates.category = category;
+  }
+  if (addons !== undefined) {
+    updates.addons = parseAddons(addons) ?? [];
   }
 
   const updated = await updateMenuItem(id, updates);

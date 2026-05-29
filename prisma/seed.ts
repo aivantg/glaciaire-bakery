@@ -18,16 +18,35 @@ const SEED_ITEMS = [
     description: "Loaded with fresh blueberries",
     price: 400,
   },
+  {
+    name: "Latte",
+    description: "Espresso with steamed milk",
+    price: 500,
+    category: "cafe" as const,
+    addons: [
+      { name: "Oat milk", price: 50 },
+      { name: "Extra espresso shot", price: 75 },
+    ],
+  },
 ];
 
 async function main() {
   for (const item of SEED_ITEMS) {
-    // Idempotent: only insert if a row with this name doesn't already exist.
     const existing = await prisma.menuItem.findFirst({
       where: { name: item.name },
     });
     if (existing) continue;
-    await prisma.menuItem.create({ data: item });
+
+    const { addons, category, ...fields } = item;
+    await prisma.menuItem.create({
+      data: {
+        ...fields,
+        category: category ?? "pastries",
+        addons: addons?.length
+          ? { create: addons.map((a) => ({ name: a.name, price: a.price })) }
+          : undefined,
+      },
+    });
   }
   const count = await prisma.menuItem.count();
   console.log(`Seed complete. Menu items in db: ${count}`);

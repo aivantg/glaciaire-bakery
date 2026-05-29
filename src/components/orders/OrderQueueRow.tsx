@@ -47,7 +47,7 @@ export function OrderQueueRow({
       }`}
     >
       <div
-        className={`min-w-0 flex-1 ${isDone || isArchived ? "opacity-50" : ""}`}
+        className={`min-w-0 flex-1 ${isArchived ? "opacity-50" : ""}`}
       >
         <div className="flex items-baseline gap-2 flex-wrap">
           <span className="font-mono text-sm sm:text-base font-bold text-ink-400">

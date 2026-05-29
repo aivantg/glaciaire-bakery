@@ -28,13 +28,13 @@ export default function RootLayout({
           {children}
         </main>
 
-        <footer className="text-center pt-8 pb-10 px-4">
+        <footer className="text-center pt-8 pb-10 px-4 flex flex-col items-center gap-3">
           <HostFooterLink />
           <a
             href="https://github.com/aivantg/glaciaire-bakery"
             target="_blank"
             rel="noopener noreferrer"
-            className="mt-3 inline-block font-mono text-xs text-ink-300 hover:text-ink-900 transition-colors"
+            className="font-mono text-xs text-ink-300 hover:text-ink-900 transition-colors"
           >
             made with love and cookies :)
           </a>

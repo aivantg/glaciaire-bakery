@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 
 export interface HostSession {
   authenticated: boolean | null; // null while loading
@@ -10,6 +11,7 @@ export interface HostSession {
 
 export function useHostSession(): HostSession {
   const [authenticated, setAuthenticated] = useState<boolean | null>(null);
+  const pathname = usePathname();
 
   const refresh = useCallback(async () => {
     try {
@@ -26,9 +28,12 @@ export function useHostSession(): HostSession {
     setAuthenticated(false);
   }, []);
 
+  // Re-check auth on every route change so the layout reflects login/logout
+  // without requiring a full page refresh (the root layout persists across
+  // client-side navigations in Next.js App Router).
   useEffect(() => {
     refresh();
-  }, [refresh]);
+  }, [refresh, pathname]);
 
   return { authenticated, refresh, logout };
 }

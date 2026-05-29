@@ -3,7 +3,12 @@
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import type { MenuItem, MenuCategory } from "@/lib/store";
+import { addonSublistClass, formatAddonPrice } from "@/lib/order-display";
 import { useHostSession } from "@/hooks/useHostSession";
+import { useConfirmAction } from "@/hooks/useConfirmAction";
+import { ConfirmActionButton } from "@/components/ConfirmActionButton";
+
+const CONFIRM_MS = 3000;
 
 const CATEGORY_LABEL: Record<MenuCategory, string> = {
   cafe: "cafe",
@@ -12,6 +17,37 @@ const CATEGORY_LABEL: Record<MenuCategory, string> = {
 
 function formatPrice(cents: number): string {
   return (cents / 100).toFixed(2);
+}
+
+function formatUnitsOrdered(count: number): string {
+  if (count === 0) return "never ordered";
+  if (count === 1) return "1 ordered";
+  return `${count} ordered`;
+}
+
+function AdminAddonPreview({ addons }: { addons: MenuItem["addons"] }) {
+  if (addons.length === 0) return null;
+
+  return (
+    <ul className={`mt-2 ${addonSublistClass}`}>
+      {addons.map((addon) => {
+        const priceLabel = formatAddonPrice(addon.price);
+        return (
+          <li
+            key={addon.id}
+            className={addon.available ? "text-ink-600" : "text-ink-400"}
+          >
+            <span className="text-ink-400">+ </span>
+            {addon.name}
+            {priceLabel && <span className="text-ink-400"> {priceLabel}</span>}
+            {!addon.available && (
+              <span className="text-ink-400"> (off)</span>
+            )}
+          </li>
+        );
+      })}
+    </ul>
+  );
 }
 
 function parsePriceToCents(value: string): number {
@@ -54,6 +90,8 @@ export default function MenuPage() {
   }, [authenticated, router]);
 
   const [items, setItems] = useState<MenuItem[]>([]);
+  const [archivedItems, setArchivedItems] = useState<MenuItem[]>([]);
+  const [orderCounts, setOrderCounts] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -62,14 +100,31 @@ export default function MenuPage() {
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
   const [formError, setFormError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [archiving, setArchiving] = useState<string | null>(null);
+  const [unarchiving, setUnarchiving] = useState<string | null>(null);
+  const confirm = useConfirmAction(CONFIRM_MS);
 
   const fetchItems = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch("/api/menu");
-      if (!res.ok) throw new Error("Failed to load menu");
-      setItems(await res.json());
+      const [activeRes, archivedRes, statsRes] = await Promise.all([
+        fetch("/api/menu"),
+        fetch("/api/menu/archived"),
+        fetch("/api/menu/stats"),
+      ]);
+      if (!activeRes.ok) throw new Error("Failed to load menu");
+      setItems(await activeRes.json());
+      if (archivedRes.ok) {
+        setArchivedItems(await archivedRes.json());
+      } else {
+        setArchivedItems([]);
+      }
+      if (statsRes.ok) {
+        setOrderCounts(await statsRes.json());
+      } else {
+        setOrderCounts({});
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : "Unknown error");
     } finally {
@@ -98,7 +153,8 @@ export default function MenuPage() {
       category: item.category,
       addons: item.addons.map((a) => ({
         name: a.name,
-        price: formatPrice(a.price),
+        price:
+          a.price != null && a.price > 0 ? formatPrice(a.price) : "",
         available: a.available,
       })),
     });
@@ -151,19 +207,27 @@ export default function MenuPage() {
       return;
     }
 
-    const addonsPayload: { name: string; price: number; available: boolean }[] =
-      [];
+    const addonsPayload: {
+      name: string;
+      price: number | null;
+      available: boolean;
+    }[] = [];
     for (const row of form.addons) {
       const trimmed = row.name.trim();
       if (!trimmed) continue;
-      const addonPrice = parseFloat(row.price);
-      if (isNaN(addonPrice) || addonPrice < 0) {
-        setFormError(`Enter a valid price for add-on "${trimmed}"`);
-        return;
+      const priceStr = row.price.trim();
+      let price: number | null = null;
+      if (priceStr !== "") {
+        const addonPrice = parseFloat(priceStr);
+        if (isNaN(addonPrice) || addonPrice < 0) {
+          setFormError(`Enter a valid price for add-on "${trimmed}"`);
+          return;
+        }
+        price = parsePriceToCents(row.price);
       }
       addonsPayload.push({
         name: trimmed,
-        price: parsePriceToCents(row.price),
+        price,
         available: row.available,
       });
     }
@@ -200,19 +264,40 @@ export default function MenuPage() {
     }
   }
 
-  async function handleDelete(id: string, name: string) {
-    if (!confirm(`Delete "${name}"?`)) return;
+  async function handleArchive(id: string) {
+    setArchiving(id);
     try {
       const res = await fetch(`/api/menu/${id}`, { method: "DELETE" });
       if (!res.ok) {
         const data = await res.json();
-        alert(data.error ?? "Delete failed");
-        return;
+        throw new Error(data.error ?? "Archive failed");
       }
       await fetchItems();
       if (editingId === id) cancelEdit();
-    } catch {
-      alert("Delete failed");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Archive failed");
+    } finally {
+      setArchiving(null);
+    }
+  }
+
+  async function handleUnarchive(id: string) {
+    setUnarchiving(id);
+    try {
+      const res = await fetch(`/api/menu/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ archived: false }),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error ?? "Unarchive failed");
+      }
+      await fetchItems();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Unarchive failed");
+    } finally {
+      setUnarchiving(null);
     }
   }
 
@@ -377,7 +462,7 @@ export default function MenuPage() {
                       </div>
                       <div>
                         <label className="block font-sans text-xs tracking-widest uppercase font-bold text-ink-600 mb-1">
-                          + ($)
+                          + ($) <span className="font-medium normal-case tracking-normal text-ink-400">optional</span>
                         </label>
                         <input
                           type="number"
@@ -387,7 +472,7 @@ export default function MenuPage() {
                           onChange={(e) =>
                             updateAddonRow(index, { price: e.target.value })
                           }
-                          placeholder="0.50"
+                          placeholder="leave blank if free"
                           className={inputClass}
                         />
                       </div>
@@ -475,6 +560,10 @@ export default function MenuPage() {
                     {item.description}
                   </p>
                 )}
+                <AdminAddonPreview addons={item.addons} />
+                <p className="font-mono text-xs text-ink-400 mt-1">
+                  {formatUnitsOrdered(orderCounts[item.id] ?? 0)}
+                </p>
               </div>
               <div className="font-sans font-semibold text-ink-800 shrink-0">
                 ${formatPrice(item.price)}
@@ -492,16 +581,68 @@ export default function MenuPage() {
                 >
                   edit
                 </button>
-                <button
-                  onClick={() => handleDelete(item.id, item.name)}
-                  className="link-mono text-bakery-500"
-                >
-                  delete
-                </button>
+                <ConfirmActionButton
+                  actionKey={`${item.id}:archive`}
+                  label="archive"
+                  onConfirm={() => handleArchive(item.id)}
+                  disabled={archiving === item.id}
+                  confirm={confirm}
+                />
               </div>
             </li>
           ))}
         </ul>
+      )}
+
+      {!loading && !error && archivedItems.length > 0 && (
+        <section className="mt-14 sm:mt-16">
+          <h2 className="font-sans font-black text-2xl text-ink-900">
+            archived items
+          </h2>
+          <p className="mt-2 font-sans text-sm text-ink-500">
+            hidden from the menu — unarchive to bring back.
+          </p>
+          <ul className="list-hairline mt-6">
+            {archivedItems.map((item) => (
+              <li
+                key={item.id}
+                className="py-5 flex flex-wrap items-start sm:items-center justify-between gap-x-4 gap-y-3 opacity-50"
+              >
+                <div className="min-w-0 flex-1 basis-full sm:basis-auto">
+                  <div className="flex items-baseline gap-2 flex-wrap">
+                    <span className="font-sans font-extrabold text-lg text-ink-900 break-words">
+                      {item.name}
+                    </span>
+                    <span className="font-sans text-xs tracking-widest uppercase font-bold text-ink-400">
+                      {CATEGORY_LABEL[item.category]}
+                    </span>
+                  </div>
+                  {item.description && (
+                    <p className="font-sans text-sm text-ink-400 mt-1">
+                      {item.description}
+                    </p>
+                  )}
+                  <AdminAddonPreview addons={item.addons} />
+                  <p className="font-mono text-xs text-ink-400 mt-1">
+                    {formatUnitsOrdered(orderCounts[item.id] ?? 0)}
+                  </p>
+                </div>
+                <div className="font-sans font-semibold text-ink-800 shrink-0">
+                  ${formatPrice(item.price)}
+                </div>
+                <div className="shrink-0 ml-auto">
+                  <ConfirmActionButton
+                    actionKey={`${item.id}:unarchive`}
+                    label="unarchive"
+                    onConfirm={() => handleUnarchive(item.id)}
+                    disabled={unarchiving === item.id}
+                    confirm={confirm}
+                  />
+                </div>
+              </li>
+            ))}
+          </ul>
+        </section>
       )}
     </div>
   );

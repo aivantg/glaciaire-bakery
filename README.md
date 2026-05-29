@@ -1,124 +1,41 @@
-# bakery-popup
+# glaciaire popup app
 
-A Next.js 14 bakery pop-up ordering system, backed by Postgres via Prisma.
+A simple ordering app built for Glaciaire — customers browse the menu and place orders, and hosts manage the menu and kitchen queue. 
 
-## Local development
+The concept and UI was inspired by [SXSE Coffee Pop Up](https://sxse-popup.vercel.app/)!
 
-You'll need Node 20+, npm, and Docker.
+## Run locally
+
+You'll need Node 20+, npm, and (optionally) Docker. You can switch the backend to sqlite for local dev if preferred!
 
 ```bash
-# 1. Install JS deps (this also runs `prisma generate` via postinstall)
 npm install
-
-# 2. Start a local Postgres container
 npm run db:up
-
-# 3. Copy the example env file
 cp .env.example .env
-
-# 4. Apply migrations and seed
-npm run db:migrate    # creates the schema + applies migrations
-npm run db:seed       # inserts the starter menu items
-
-# 5. Run the dev server
+npm run db:migrate
+npm run db:seed
 npm run dev
 ```
 
-Open [http://localhost:5000](http://localhost:5000).
+Open [http://localhost:5000](http://localhost:5000). Click "host login" at the bottom of any page to unlock menu editing and order controls (default PIN is in `.env.example`).
 
-The host login PIN defaults to `0000` (set in `.env.example`). Click "host
-login" at the bottom of any page to unlock the admin tab and the kitchen
-controls on the order queue.
+## Database
 
-### Useful db scripts
+| Script | What it does |
+| --- | --- |
+| `db:up` / `db:down` | Start or stop local Postgres (Docker Compose) |
+| `db:migrate` | Apply migrations in dev (`prisma migrate dev`) |
+| `db:deploy` | Apply migrations in production/CI |
+| `db:generate` | Regenerate the Prisma Client from `prisma/schema.prisma` |
+| `db:seed` | Load sample menu data |
+| `db:studio` | Open Prisma Studio |
 
-| script             | what it does                                       |
-| ------------------ | -------------------------------------------------- |
-| `npm run db:up`    | start the local Postgres container                 |
-| `npm run db:down`  | stop the container (data persists in the volume)  |
-| `npm run db:migrate` | create a migration from schema changes + apply it |
-| `npm run db:seed`  | seed the database with starter menu items          |
-| `npm run db:studio` | open Prisma Studio (browse/edit data in a GUI)    |
-| `npm run db:reset` | drop everything and re-apply migrations + seed     |
+`npm install` runs `db:generate` automatically. After you change the schema or pull new migrations, run `npm run db:migrate` (or `db:deploy`), then **`npm run db:generate`** if migrate didn’t already, and **restart `npm run dev`** — Next.js keeps a cached Prisma client in development, so hot reload alone isn’t enough.
 
-## Deploying with Dokku
+## Environment variables
 
-Production runs the app from the multi-stage `Dockerfile`. Dokku reads
-`Procfile` to run database migrations on each release and to start the web
-process.
-
-### One-time server setup
-
-```bash
-# Install the postgres plugin (once per dokku host)
-sudo dokku plugin:install https://github.com/dokku/dokku-postgres.git
-
-# Create the app
-dokku apps:create bakery-popup
-
-# Create + link a postgres service — this sets DATABASE_URL automatically
-dokku postgres:create bakery-popup-db
-dokku postgres:link bakery-popup-db bakery-popup
-
-# Set the host login PIN (anyone with this can edit the menu / advance orders)
-dokku config:set bakery-popup HOST_PIN="your-secret-pin"
-
-# Optional — a long random session secret so the cookie signing key is
-# independent of the PIN. Strongly recommended in production.
-dokku config:set bakery-popup HOST_SESSION_SECRET="$(openssl rand -hex 32)"
-
-# Map external port 80 → container port 5000
-dokku ports:set bakery-popup http:80:5000
-```
-
-For HTTPS, install the Let's Encrypt plugin and run:
-
-```bash
-dokku letsencrypt:enable bakery-popup
-```
-
-### Deploy
-
-```bash
-# One-time: add the remote (replace <host> with your server's address)
-git remote add dokku dokku@<host>:bakery-popup
-
-# Deploy
-git push dokku main
-```
-
-On every deploy, Dokku will:
-
-1. Build the Docker image from `Dockerfile`
-2. Run the `release` Procfile entry → `prisma migrate deploy` (applies any
-   pending migrations against the linked Postgres service)
-3. Start the `web` Procfile entry → `node server.js`
-
-The `Dockerfile` uses **BuildKit cache mounts** for the npm cache and the
-Next.js build cache, so warm deploys are dramatically faster than cold ones
-(seconds instead of a minute). Dokku 0.30+ enables BuildKit by default. On
-older versions, opt in once per app:
-
-```bash
-dokku config:set --no-restart bakery-popup DOCKER_BUILDKIT=1
-```
-
-### Seeding production (optional, one-time)
-
-The seed script is **not** run automatically on deploy. To seed production:
-
-```bash
-dokku run bakery-popup node node_modules/prisma/build/index.js db seed
-```
-
-### Backing up production data
-
-```bash
-dokku postgres:export bakery-popup-db > backup-$(date +%F).dump
-```
-
-### Setting extra env vars
-
-```bash
-dokku config:set bakery-popup KEY=value
-```
+| Variable | Required | Description |
+| --- | --- | --- |
+| `DATABASE_URL` | Yes | Postgres connection string. `.env.example` matches the local Docker Compose database. |
+| `HOST_PIN` | Yes | PIN for host login — unlocks menu admin and order status controls. |
+| `HOST_SESSION_SECRET` | No | Random string to sign host session cookies. If unset, derived from `HOST_PIN`. Set in production so changing the PIN doesn't invalidate sessions. |

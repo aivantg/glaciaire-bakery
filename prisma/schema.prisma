@@ -22,6 +22,7 @@ model MenuItem {
   description String       @default("")
   price       Int          // cents
   available   Boolean      @default(true)
+  archived    Boolean      @default(false)
   category    MenuCategory @default(pastries)
   createdAt   DateTime     @default(now())
 
@@ -29,6 +30,7 @@ model MenuItem {
   addons      MenuItemAddon[]
 
   @@index([available])
+  @@index([archived])
   @@index([category])
 }
 
@@ -37,7 +39,7 @@ model MenuItemAddon {
   menuItemId String
   menuItem   MenuItem @relation(fields: [menuItemId], references: [id], onDelete: Cascade)
   name       String
-  price      Int      // cents upcharge
+  price      Int?     // cents upcharge; null or 0 = no charge shown on menu
   available  Boolean  @default(true)
 
   @@index([menuItemId])
@@ -55,6 +57,7 @@ model Order {
   notes         String?
   status        OrderStatus @default(pending)
   archived      Boolean     @default(false)
+  deletedAt     DateTime?   // soft delete — set when host removes an archived order
   total         Int         // cents — snapshot of items at order time
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
@@ -64,6 +67,7 @@ model Order {
   @@index([status])
   @@index([createdAt])
   @@index([archived])
+  @@index([deletedAt])
 }
 
 model OrderItem {

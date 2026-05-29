@@ -2,8 +2,10 @@
 
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
 import type { Order, OrderStatus } from "@/lib/store";
+import { addonSublistClass, orderItemsForDisplay } from "@/lib/order-display";
+import { ConfirmActionButton } from "@/components/ConfirmActionButton";
+import { useConfirmAction } from "@/hooks/useConfirmAction";
 import { useHostSession } from "@/hooks/useHostSession";
 
 function formatPrice(cents: number): string {
@@ -33,8 +35,18 @@ const STATUS_NEXT_LABEL: Partial<Record<OrderStatus, string>> = {
   in_progress: "mark ready",
 };
 
-const RECENTLY_FINISHED_MS = 5 * 60 * 1000;
-const ARCHIVE_CONFIRM_MS = 3000;
+const RECENTLY_FINISHED_MS = 60 * 1000;
+const CONFIRM_MS = 3000;
+
+const ARCHIVED_STATUS_COLOR = "#6b7280";
+
+type QueueFilter = "working_on_it" | "finished" | "all";
+
+const FILTER_LABELS: Record<QueueFilter, string> = {
+  working_on_it: "working on it",
+  finished: "ready!",
+  all: "all",
+};
 
 function isRecentlyFinished(order: Order, now: number): boolean {
   return (
@@ -56,10 +68,94 @@ function isFinishedOrder(order: Order): boolean {
   return order.status === "done" && !order.archived;
 }
 
+function matchesFilter(
+  order: Order,
+  filter: QueueFilter,
+  now: number
+): boolean {
+  if (filter === "all") return true;
+  if (filter === "working_on_it") return isWorkingOnIt(order, now);
+  return isFinishedOrder(order);
+}
+
+function orderSortRank(order: Order): number {
+  if (order.archived) return 4;
+  if (order.status === "done") return 1;
+  if (order.status === "in_progress") return 2;
+  return 3;
+}
+
+function sortOrders(orders: Order[]): Order[] {
+  return [...orders].sort((a, b) => {
+    const rankDiff = orderSortRank(a) - orderSortRank(b);
+    if (rankDiff !== 0) return rankDiff;
+    return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
+  });
+}
+
 function statusColor(s: OrderStatus) {
   if (s === "pending") return "#e94e89";
   if (s === "in_progress") return "#e09d28";
-  return "#3d7348";
+  return "#16a34a"; // ready — prominent green
+}
+
+function queueEmptyState(
+  filter: QueueFilter,
+  hasAnyOrders: boolean
+): { title: string; hint: string; showMenuLink: boolean } {
+  if (!hasAnyOrders) {
+    return {
+      title: "no orders yet",
+      hint: "the queue is quiet — be the first to order.",
+      showMenuLink: true,
+    };
+  }
+  switch (filter) {
+    case "working_on_it":
+      return {
+        title: "counter's clear",
+        hint: "be the change you wanna see!",
+        showMenuLink: true,
+      };
+    case "finished":
+      return {
+        title: "we're working on it",
+        hint: "check back in a bit!",
+        showMenuLink: false,
+      };
+    case "all":
+      return {
+        title: "no orders yet",
+        hint: "ahh, the smell of a fresh new website",
+        showMenuLink: false,
+      };
+  }
+}
+
+function QueueEmptyState({
+  filter,
+  hasAnyOrders,
+}: {
+  filter: QueueFilter;
+  hasAnyOrders: boolean;
+}) {
+  const { title, hint, showMenuLink } = queueEmptyState(filter, hasAnyOrders);
+
+  return (
+    <div className="text-center py-16 sm:py-20 px-4">
+      <p className="font-sans font-black text-2xl sm:text-3xl text-ink-900 tracking-tight">
+        {title}
+      </p>
+      <p className="mt-3 font-sans text-sm text-ink-500 max-w-md mx-auto leading-relaxed">
+        {hint}
+      </p>
+      {showMenuLink && (
+        <Link href="/order" className="link-mono inline-block mt-6">
+          start an order →
+        </Link>
+      )}
+    </div>
+  );
 }
 
 type OrderRowProps = {
@@ -68,10 +164,10 @@ type OrderRowProps = {
   isNew: boolean;
   authenticated: boolean;
   updating: string | null;
-  confirmingArchiveId: string | null;
+  confirm: ReturnType<typeof useConfirmAction>;
   onAdvanceStatus: (order: Order) => void;
-  onArchiveClick: (orderId: string) => void;
-  showArchived?: boolean;
+  onSetArchived: (orderId: string, archived: boolean) => void | Promise<void>;
+  onDeleteOrder: (orderId: string) => void | Promise<void>;
 };
 
 function OrderRow({
@@ -80,21 +176,24 @@ function OrderRow({
   isNew,
   authenticated,
   updating,
-  confirmingArchiveId,
+  confirm,
   onAdvanceStatus,
-  onArchiveClick,
-  showArchived = false,
+  onSetArchived,
+  onDeleteOrder,
 }: OrderRowProps) {
   const isDone = order.status === "done";
   const isArchived = order.archived;
+  const isUpdating = updating === order.id;
 
   return (
     <li
       className={`py-5 sm:py-6 flex items-start justify-between gap-3 sm:gap-6 ${
         isNew ? "order-new" : ""
-      } ${isDone || isArchived ? "opacity-50" : ""}`}
+      }`}
     >
-      <div className="min-w-0 flex-1">
+      <div
+        className={`min-w-0 flex-1 ${isDone || isArchived ? "opacity-50" : ""}`}
+      >
         <div className="flex items-baseline gap-2 flex-wrap">
           <span className="font-mono text-sm sm:text-base font-bold text-ink-400">
             #{orderNumber}
@@ -107,69 +206,87 @@ function OrderRow({
               new
             </span>
           )}
-          {showArchived && isArchived && (
-            <span className="font-sans text-xs tracking-widest uppercase font-bold text-ink-400">
-              archived
-            </span>
-          )}
         </div>
-        <ul className="mt-1 font-sans text-sm font-medium text-ink-800 space-y-1">
-          {order.items.map((item, i) => {
-            const addonTotal = item.addons.reduce(
-              (sum, a) => sum + a.unitPrice,
-              0
-            );
-            const lineTotal = (item.unitPrice + addonTotal) * item.quantity;
-            return (
-              <li key={i}>
-                <div>
-                  {item.quantity}× {item.menuItemName}
-                  <span className="text-ink-400 font-normal">
-                    {" "}
-                    — ${formatPrice(lineTotal)}
-                  </span>
-                </div>
-                {item.addons.length > 0 && (
-                  <ul className="ml-3 mt-0.5 text-ink-500 font-normal space-y-0.5">
-                    {item.addons.map((addon, j) => (
-                      <li key={j}>+ {addon.name}</li>
-                    ))}
-                  </ul>
-                )}
-              </li>
-            );
-          })}
+        <ul className="mt-1 font-sans text-sm font-medium text-ink-800 space-y-2">
+          {orderItemsForDisplay(order.items).map((line, i) => (
+            <li key={i}>
+              <div>
+                {line.quantity}× {line.menuItemName}
+                <span className="text-ink-400 font-normal">
+                  {" "}
+                  — ${formatPrice(line.lineTotalCents)}
+                </span>
+              </div>
+              {line.addons.length > 0 && (
+                <ul className={`ml-3 ${addonSublistClass} font-normal`}>
+                  {line.addons.map((addon, j) => (
+                    <li key={j}>
+                      <span className="text-ink-400">+ </span>
+                      {addon.name}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </li>
+          ))}
         </ul>
         <div className="font-mono text-xs text-ink-400 mt-1">
           {formatTime(order.createdAt)} · total ${formatPrice(order.total)}
         </div>
       </div>
 
-      <div className="flex flex-col items-end gap-2 shrink-0">
-        {authenticated && isDone && !isArchived && (
-          <button
-            onClick={() => onArchiveClick(order.id)}
-            disabled={updating === order.id}
-            className={`link-mono disabled:opacity-50 ${
-              confirmingArchiveId === order.id ? "text-red-500" : ""
-            }`}
-          >
-            {confirmingArchiveId === order.id ? "you sure?" : "archive"}
-          </button>
-        )}
+      <div className="flex flex-col items-end gap-1 shrink-0">
         <span
           className="status-text"
-          style={{ color: statusColor(order.status) }}
+          style={{
+            color: isArchived ? ARCHIVED_STATUS_COLOR : statusColor(order.status),
+          }}
         >
-          {STATUS_LABELS[order.status]}
+          {isArchived ? "archived" : STATUS_LABELS[order.status]}
         </span>
-        {authenticated && STATUS_NEXT[order.status] && (
+        {authenticated && isDone && !isArchived && (
+          <ConfirmActionButton
+            actionKey={`${order.id}:archive`}
+            label="archive"
+            onConfirm={() => onSetArchived(order.id, true)}
+            disabled={isUpdating}
+            variant="chip"
+            size="sm"
+            confirm={confirm}
+          />
+        )}
+        {authenticated && isArchived && (
+          <>
+            <ConfirmActionButton
+              actionKey={`${order.id}:unarchive`}
+              label="unarchive"
+              onConfirm={() => onSetArchived(order.id, false)}
+              disabled={isUpdating}
+              variant="chip"
+              size="sm"
+              confirm={confirm}
+            />
+            <ConfirmActionButton
+              actionKey={`${order.id}:delete`}
+              label="delete"
+              confirmLabel="delete?"
+              onConfirm={() => onDeleteOrder(order.id)}
+              disabled={isUpdating}
+              variant="chip"
+              size="sm"
+              className="action-chip--danger"
+              confirm={confirm}
+            />
+          </>
+        )}
+        {authenticated && !isArchived && STATUS_NEXT[order.status] && (
           <button
+            type="button"
             onClick={() => onAdvanceStatus(order)}
-            disabled={updating === order.id}
-            className="link-mono disabled:opacity-50"
+            disabled={isUpdating}
+            className="action-chip action-chip--sm"
           >
-            {updating === order.id ? "…" : STATUS_NEXT_LABEL[order.status]}
+            {isUpdating ? "…" : STATUS_NEXT_LABEL[order.status]}
           </button>
         )}
       </div>
@@ -177,31 +294,85 @@ function OrderRow({
   );
 }
 
-function SectionHeader({ label, count }: { label: string; count: number }) {
+type ArchiveAllModalProps = {
+  finishedCount: number;
+  archiving: boolean;
+  error: string | null;
+  onConfirm: () => void;
+  onCancel: () => void;
+};
+
+function ArchiveAllModal({
+  finishedCount,
+  archiving,
+  error,
+  onConfirm,
+  onCancel,
+}: ArchiveAllModalProps) {
   return (
-    <h2 className="font-sans text-xs tracking-widest uppercase font-bold text-ink-600 pt-6 pb-2">
-      {label} ({count})
-    </h2>
+    <div
+      className="modal-backdrop"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="archive-all-title"
+      onClick={archiving ? undefined : onCancel}
+    >
+      <div className="modal-card" onClick={(e) => e.stopPropagation()}>
+        <h2
+          id="archive-all-title"
+          className="font-sans font-black text-xl sm:text-2xl text-ink-900"
+        >
+          archive all ready orders?
+        </h2>
+        <p className="mt-4 font-sans text-sm text-ink-700 leading-relaxed">
+          This will hide{" "}
+          <span className="font-semibold text-ink-900">
+            {finishedCount} ready order{finishedCount === 1 ? "" : "s"}
+          </span>{" "}
+          from the queue for customers. You can manually unarchive individual
+          orders later.
+        </p>
+        {error && (
+          <p className="mt-3 font-sans text-sm text-red-500">{error}</p>
+        )}
+        <div className="mt-6 flex flex-col items-center gap-3">
+          <button
+            type="button"
+            onClick={onConfirm}
+            disabled={archiving}
+            className="btn-dark"
+          >
+            {archiving ? "archiving…" : "archive all"}
+          </button>
+          <button
+            type="button"
+            onClick={onCancel}
+            disabled={archiving}
+            className="link-mono"
+          >
+            cancel
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }
 
 export default function OrdersPage() {
   const { authenticated } = useHostSession();
-  const pathname = usePathname();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [filter, setFilter] = useState<QueueFilter>("working_on_it");
   const [updating, setUpdating] = useState<string | null>(null);
-  const [confirmingArchiveId, setConfirmingArchiveId] = useState<string | null>(
-    null
-  );
+  const [showArchiveAllModal, setShowArchiveAllModal] = useState(false);
+  const [archivingAll, setArchivingAll] = useState(false);
+  const [archiveAllError, setArchiveAllError] = useState<string | null>(null);
+  const confirm = useConfirmAction(CONFIRM_MS);
   const [newOrderIds, setNewOrderIds] = useState<Set<string>>(new Set());
   const [now, setNow] = useState(() => Date.now());
   const knownOrderIds = useRef<Set<string>>(new Set());
   const isFirstFetch = useRef(true);
-  const archiveConfirmTimer = useRef<ReturnType<typeof setTimeout> | null>(
-    null
-  );
 
   const fetchOrders = useCallback(async () => {
     setError(null);
@@ -253,22 +424,6 @@ export default function OrdersPage() {
     return () => clearInterval(interval);
   }, []);
 
-  useEffect(() => {
-    return () => {
-      if (archiveConfirmTimer.current) {
-        clearTimeout(archiveConfirmTimer.current);
-      }
-    };
-  }, []);
-
-  function resetArchiveConfirm() {
-    if (archiveConfirmTimer.current) {
-      clearTimeout(archiveConfirmTimer.current);
-      archiveConfirmTimer.current = null;
-    }
-    setConfirmingArchiveId(null);
-  }
-
   async function advanceStatus(order: Order) {
     const nextStatus = STATUS_NEXT[order.status];
     if (!nextStatus) return;
@@ -287,27 +442,45 @@ export default function OrdersPage() {
     }
   }
 
-  async function archiveOrder(orderId: string) {
-    if (confirmingArchiveId !== orderId) {
-      if (archiveConfirmTimer.current) {
-        clearTimeout(archiveConfirmTimer.current);
-      }
-      setConfirmingArchiveId(orderId);
-      archiveConfirmTimer.current = setTimeout(() => {
-        setConfirmingArchiveId(null);
-        archiveConfirmTimer.current = null;
-      }, ARCHIVE_CONFIRM_MS);
-      return;
+  async function archiveAllFinished() {
+    setArchiveAllError(null);
+    setArchivingAll(true);
+    try {
+      const res = await fetch("/api/orders/archive-finished", {
+        method: "POST",
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Archive failed");
+      setShowArchiveAllModal(false);
+      await fetchOrders();
+    } catch (e) {
+      setArchiveAllError(
+        e instanceof Error ? e.message : "Something went wrong"
+      );
+    } finally {
+      setArchivingAll(false);
     }
+  }
 
-    resetArchiveConfirm();
+  async function setOrderArchived(orderId: string, archived: boolean) {
     setUpdating(orderId);
     try {
       const res = await fetch(`/api/orders/${orderId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ archived: true }),
+        body: JSON.stringify({ archived }),
       });
+      if (!res.ok) return;
+      await fetchOrders();
+    } finally {
+      setUpdating(null);
+    }
+  }
+
+  async function deleteOrder(orderId: string) {
+    setUpdating(orderId);
+    try {
+      const res = await fetch(`/api/orders/${orderId}`, { method: "DELETE" });
       if (!res.ok) return;
       await fetchOrders();
     } finally {
@@ -327,17 +500,33 @@ export default function OrdersPage() {
     return map;
   }, [orders]);
 
-  const workingOnIt = useMemo(
-    () => orders.filter((o) => isWorkingOnIt(o, now)),
-    [orders, now]
+  const filterOptions = useMemo((): QueueFilter[] => {
+    const options: QueueFilter[] = ["working_on_it", "finished"];
+    if (authenticated) options.push("all");
+    return options;
+  }, [authenticated]);
+
+  useEffect(() => {
+    if (!authenticated && filter === "all") {
+      setFilter("working_on_it");
+    }
+  }, [authenticated, filter]);
+
+  const counts = useMemo(() => {
+    return {
+      working_on_it: orders.filter((o) => isWorkingOnIt(o, now)).length,
+      finished: orders.filter((o) => isFinishedOrder(o)).length,
+      all: orders.length,
+    };
+  }, [orders, now]);
+
+  const filteredOrders = useMemo(
+    () =>
+      sortOrders(orders.filter((o) => matchesFilter(o, filter, now))),
+    [orders, filter, now]
   );
 
-  const finishedOrders = useMemo(
-    () => orders.filter((o) => isFinishedOrder(o)),
-    [orders]
-  );
-
-  const renderOrder = (order: Order, showArchived = false) => (
+  const renderOrder = (order: Order) => (
     <OrderRow
       key={order.id}
       order={order}
@@ -345,14 +534,12 @@ export default function OrdersPage() {
       isNew={newOrderIds.has(order.id)}
       authenticated={authenticated === true}
       updating={updating}
-      confirmingArchiveId={confirmingArchiveId}
+      confirm={confirm}
       onAdvanceStatus={advanceStatus}
-      onArchiveClick={archiveOrder}
-      showArchived={showArchived}
+      onSetArchived={setOrderArchived}
+      onDeleteOrder={deleteOrder}
     />
   );
-
-  const customerHasOrders = workingOnIt.length > 0 || finishedOrders.length > 0;
 
   return (
     <div className="pt-6">
@@ -360,30 +547,25 @@ export default function OrdersPage() {
         the queue
       </h1>
 
-      {authenticated === false && (
-        <div className="mt-6 row-hairline py-4 flex flex-wrap items-center justify-between gap-3">
-          <p className="font-sans text-sm text-ink-600">
-            log in as host to update order status.
-          </p>
-          <Link
-            href={`/host?next=${encodeURIComponent(pathname || "/orders")}`}
-            className="link-mono text-ink-900"
-          >
-            host login →
-          </Link>
-        </div>
-      )}
-
       <div className="mt-8 sm:mt-10 flex flex-wrap items-center justify-between gap-x-4 gap-y-2 row-hairline py-3">
-        {authenticated ? (
-          <h2 className="font-sans text-xs tracking-widest uppercase font-bold text-ink-900">
-            all orders ({orders.length})
-          </h2>
-        ) : (
-          <div className="font-sans text-xs tracking-widest uppercase font-bold text-ink-600">
-            live queue
-          </div>
-        )}
+        <div className="flex flex-wrap gap-x-4 gap-y-2 sm:gap-5 font-sans text-xs tracking-widest uppercase font-bold">
+          {filterOptions.map((option) => {
+            const active = filter === option;
+            return (
+              <button
+                key={option}
+                onClick={() => setFilter(option)}
+                className={`transition-colors ${
+                  active
+                    ? "text-ink-900"
+                    : "text-ink-400 hover:text-ink-900"
+                }`}
+              >
+                {FILTER_LABELS[option]} ({counts[option]})
+              </button>
+            );
+          })}
+        </div>
         <div className="flex items-center gap-2 font-sans text-xs tracking-widest uppercase text-leaf-700 font-bold">
           <span className="relative flex h-2 w-2">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-leaf-500 opacity-75"></span>
@@ -393,46 +575,48 @@ export default function OrdersPage() {
         </div>
       </div>
 
+      {filter === "finished" && authenticated && (
+        <div className="mt-4 pb-2">
+          <button
+            type="button"
+            onClick={() => {
+              setArchiveAllError(null);
+              setShowArchiveAllModal(true);
+            }}
+            disabled={counts.finished === 0 || archivingAll}
+            className="action-chip action-chip--sm"
+          >
+            archive all
+            {counts.finished > 0 ? ` (${counts.finished})` : ""}
+          </button>
+        </div>
+      )}
+
+      {showArchiveAllModal && (
+        <ArchiveAllModal
+          finishedCount={counts.finished}
+          archiving={archivingAll}
+          error={archiveAllError}
+          onConfirm={archiveAllFinished}
+          onCancel={() => {
+            if (!archivingAll) {
+              setShowArchiveAllModal(false);
+              setArchiveAllError(null);
+            }
+          }}
+        />
+      )}
+
       {loading ? (
         <div className="text-center py-12 font-sans text-ink-400">
           loading orders…
         </div>
       ) : error ? (
         <div className="text-center py-12 text-red-500">{error}</div>
-      ) : authenticated ? (
-        orders.length === 0 ? (
-          <div className="text-center py-16 font-sans text-ink-400">
-            no orders yet — place one from the menu!
-          </div>
-        ) : (
-          <ul className="list-hairline">{orders.map((o) => renderOrder(o, true))}</ul>
-        )
-      ) : !customerHasOrders ? (
-        <div className="text-center py-16 font-sans text-ink-400">
-          no orders yet — place one from the menu!
-        </div>
+      ) : filteredOrders.length === 0 ? (
+        <QueueEmptyState filter={filter} hasAnyOrders={orders.length > 0} />
       ) : (
-        <>
-          {workingOnIt.length > 0 && (
-            <>
-              <SectionHeader label="working on it" count={workingOnIt.length} />
-              <ul className="list-hairline">
-                {workingOnIt.map((o) => renderOrder(o))}
-              </ul>
-            </>
-          )}
-          {finishedOrders.length > 0 && (
-            <>
-              <SectionHeader
-                label="finished orders"
-                count={finishedOrders.length}
-              />
-              <ul className="list-hairline">
-                {finishedOrders.map((o) => renderOrder(o))}
-              </ul>
-            </>
-          )}
-        </>
+        <ul className="list-hairline">{filteredOrders.map(renderOrder)}</ul>
       )}
     </div>
   );

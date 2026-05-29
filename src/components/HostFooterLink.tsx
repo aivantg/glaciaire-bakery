@@ -4,11 +4,15 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useHostSession } from "@/hooks/useHostSession";
 
+const FOOTER_PATHS = ["/order", "/orders"];
+
 export function HostFooterLink() {
   const pathname = usePathname();
   const { authenticated, logout } = useHostSession();
 
-  if (pathname !== "/order") return null;
+  if (!pathname || !FOOTER_PATHS.includes(pathname)) return null;
+
+  const loginHref = `/host?next=${encodeURIComponent(pathname)}`;
 
   if (authenticated === null) {
     return <span className="font-mono text-xs text-ink-300">·</span>;
@@ -36,7 +40,7 @@ export function HostFooterLink() {
 
   return (
     <Link
-      href="/host"
+      href={loginHref}
       className="font-mono text-xs tracking-widest uppercase text-ink-300 hover:text-ink-900"
     >
       host login

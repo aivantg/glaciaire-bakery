@@ -4,33 +4,20 @@ import { useState, useEffect, useCallback } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import type { MenuItem, MenuCategory } from "@/lib/store";
+import {
+  addonSublistClass,
+  availableAddons,
+  cartLinesForDisplay,
+  formatAddonPrice,
+  lineUnitPrice,
+  makeCartKey,
+  type CartLine,
+} from "@/lib/order-display";
 import { Squiggle } from "@/components/Squiggle";
 import venmoQr from "@/app/venmo.png";
 
 function formatPrice(cents: number): string {
   return (cents / 100).toFixed(2);
-}
-
-interface CartItem {
-  menuItem: MenuItem;
-  quantity: number;
-  addonIds: string[];
-}
-
-function makeCartKey(menuItemId: string, addonIds: string[]): string {
-  return `${menuItemId}:${[...addonIds].sort().join(",")}`;
-}
-
-function lineUnitPrice(menuItem: MenuItem, addonIds: string[]): number {
-  const addonTotal = addonIds.reduce((sum, id) => {
-    const addon = menuItem.addons.find((a) => a.id === id);
-    return sum + (addon?.price ?? 0);
-  }, 0);
-  return menuItem.price + addonTotal;
-}
-
-function availableAddons(menuItem: MenuItem) {
-  return menuItem.addons.filter((a) => a.available);
 }
 
 // Per-item ink colors — keep the playful color-coded names from the prior design.
@@ -67,7 +54,9 @@ export default function OrderPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const [cart, setCart] = useState<Map<string, CartItem>>(new Map());
+  const [cart, setCart] = useState<Map<string, CartLine>>(new Map());
+  /** Per menu item: cart keys in add order (for LIFO minus). */
+  const [addHistory, setAddHistory] = useState<Record<string, string[]>>({});
   const [activeAddonIds, setActiveAddonIds] = useState<
     Record<string, string[]>
   >({});
@@ -100,44 +89,63 @@ export default function OrderPage() {
     return activeAddonIds[itemId] ?? [];
   }
 
-  function setQuantity(item: MenuItem, addonIds: string[], qty: number) {
+  function addOne(item: MenuItem, addonIds: string[]) {
     const key = makeCartKey(item.id, addonIds);
+    setAddHistory((prev) => ({
+      ...prev,
+      [item.id]: [...(prev[item.id] ?? []), key],
+    }));
     setCart((prev) => {
       const next = new Map(prev);
-      if (qty <= 0) {
-        next.delete(key);
-      } else {
-        next.set(key, { menuItem: item, quantity: qty, addonIds });
-      }
-      return next;
-    });
-  }
-
-  function toggleAddon(item: MenuItem, addonId: string, checked: boolean) {
-    const currentIds = getAddonIdsForItem(item.id);
-    const nextIds = checked
-      ? [...currentIds, addonId]
-      : currentIds.filter((id) => id !== addonId);
-    const oldKey = makeCartKey(item.id, currentIds);
-    const newKey = makeCartKey(item.id, nextIds);
-
-    setActiveAddonIds((prev) => ({ ...prev, [item.id]: nextIds }));
-    setCart((prev) => {
-      const next = new Map(prev);
-      const existing = next.get(oldKey);
-      if (!existing) return next;
-      next.delete(oldKey);
-      const merged = next.get(newKey);
-      next.set(newKey, {
+      const existing = next.get(key);
+      next.set(key, {
         menuItem: item,
-        quantity: (merged?.quantity ?? 0) + existing.quantity,
-        addonIds: nextIds,
+        quantity: (existing?.quantity ?? 0) + 1,
+        addonIds,
       });
       return next;
     });
   }
 
-  const cartItems = Array.from(cart.values());
+  function removeMostRecent(item: MenuItem) {
+    const history = addHistory[item.id];
+    if (!history?.length) return;
+
+    const key = history[history.length - 1];
+    setAddHistory((prev) => ({
+      ...prev,
+      [item.id]: prev[item.id]?.slice(0, -1) ?? [],
+    }));
+    setCart((prev) => {
+      const next = new Map(prev);
+      const existing = next.get(key);
+      if (!existing) return next;
+      if (existing.quantity <= 1) {
+        next.delete(key);
+      } else {
+        next.set(key, { ...existing, quantity: existing.quantity - 1 });
+      }
+      return next;
+    });
+  }
+
+  function toggleAddonSelection(itemId: string, addonId: string) {
+    setActiveAddonIds((prev) => {
+      const current = prev[itemId] ?? [];
+      const next = current.includes(addonId)
+        ? current.filter((id) => id !== addonId)
+        : [...current, addonId];
+      return { ...prev, [itemId]: next };
+    });
+  }
+
+  function totalQtyForMenuItem(itemId: string): number {
+    return Array.from(cart.values())
+      .filter((line) => line.menuItem.id === itemId)
+      .reduce((sum, line) => sum + line.quantity, 0);
+  }
+
+  const cartItems = cartLinesForDisplay(Array.from(cart.values()));
   const totalCount = cartItems.reduce((sum, { quantity }) => sum + quantity, 0);
   const total = cartItems.reduce(
     (sum, { menuItem, quantity, addonIds }) =>
@@ -241,8 +249,7 @@ export default function OrderPage() {
               <ul className="list-hairline mt-2">
                 {items.map(({ item, color }) => {
                   const selectedAddonIds = getAddonIdsForItem(item.id);
-                  const cartKey = makeCartKey(item.id, selectedAddonIds);
-                  const qty = cart.get(cartKey)?.quantity ?? 0;
+                  const totalQty = totalQtyForMenuItem(item.id);
                   const addons = availableAddons(item);
                   return (
                     <li key={item.id} className="py-5 sm:py-6">
@@ -264,15 +271,13 @@ export default function OrderPage() {
                           </div>
                         </div>
                         <div className="flex items-center gap-1 sm:gap-3 shrink-0 font-sans">
-                          {qty > 0 && (
+                          {totalQty > 0 && (
                             <>
                               <button
                                 type="button"
-                                onClick={() =>
-                                  setQuantity(item, selectedAddonIds, qty - 1)
-                                }
+                                onClick={() => removeMostRecent(item)}
                                 className="counter-btn"
-                                aria-label={`decrease ${item.name}`}
+                                aria-label={`remove last ${item.name} added`}
                               >
                                 −
                               </button>
@@ -280,15 +285,13 @@ export default function OrderPage() {
                                 className="w-5 text-center font-bold text-ink-900"
                                 aria-live="polite"
                               >
-                                {qty}
+                                {totalQty}
                               </span>
                             </>
                           )}
                           <button
                             type="button"
-                            onClick={() =>
-                              setQuantity(item, selectedAddonIds, qty + 1)
-                            }
+                            onClick={() => addOne(item, selectedAddonIds)}
                             className="counter-btn"
                             style={{ color }}
                             aria-label={`add ${item.name}`}
@@ -297,33 +300,45 @@ export default function OrderPage() {
                           </button>
                         </div>
                       </div>
-                      {qty > 0 && addons.length > 0 && (
-                        <ul className="mt-3 ml-2 space-y-2 border-l-2 border-ink-400/30 pl-4">
-                          {addons.map((addon) => (
-                            <li key={addon.id}>
-                              <label className="flex items-center gap-2 font-sans text-sm text-ink-700 cursor-pointer">
-                                <input
-                                  type="checkbox"
-                                  checked={selectedAddonIds.includes(addon.id)}
-                                  onChange={(e) =>
-                                    toggleAddon(
-                                      item,
-                                      addon.id,
-                                      e.target.checked
-                                    )
-                                  }
-                                  className="h-4 w-4 accent-ink-900"
-                                />
-                                <span>
-                                  {addon.name}{" "}
-                                  <span className="text-ink-400">
-                                    +${formatPrice(addon.price)}
+                      {addons.length > 0 && (
+                        <div className="mt-4 flex flex-wrap gap-2">
+                          {addons.map((addon) => {
+                            const selected = selectedAddonIds.includes(
+                              addon.id
+                            );
+                            const priceLabel = formatAddonPrice(addon.price);
+                            return (
+                              <button
+                                key={addon.id}
+                                type="button"
+                                onClick={() =>
+                                  toggleAddonSelection(item.id, addon.id)
+                                }
+                                className="addon-chip"
+                                aria-pressed={selected}
+                                style={
+                                  selected
+                                    ? { backgroundColor: color }
+                                    : undefined
+                                }
+                              >
+                                + {addon.name}
+                                {priceLabel && (
+                                  <span
+                                    className={
+                                      selected
+                                        ? "text-white/75"
+                                        : "text-ink-400"
+                                    }
+                                  >
+                                    {" "}
+                                    {priceLabel}
                                   </span>
-                                </span>
-                              </label>
-                            </li>
-                          ))}
-                        </ul>
+                                )}
+                              </button>
+                            );
+                          })}
+                        </div>
                       )}
                     </li>
                   );
@@ -400,7 +415,7 @@ export default function OrderPage() {
 }
 
 interface ReviewPopupProps {
-  items: CartItem[];
+  items: CartLine[];
   total: number;
   customerName: string;
   submitting: boolean;
@@ -452,6 +467,7 @@ function ReviewPopup({
             const selectedAddons = addonIds
               .map((id) => menuItem.addons.find((a) => a.id === id))
               .filter(Boolean);
+            const unit = lineUnitPrice(menuItem, addonIds);
             return (
               <li
                 key={key}
@@ -462,18 +478,18 @@ function ReviewPopup({
                     {quantity}× {menuItem.name}
                   </span>
                   {selectedAddons.length > 0 && (
-                    <ul className="mt-1 text-sm text-ink-500 space-y-0.5">
+                    <ul className={addonSublistClass}>
                       {selectedAddons.map((addon) => (
-                        <li key={addon!.id}>+ {addon!.name}</li>
+                        <li key={addon!.id}>
+                          <span className="text-ink-400">+ </span>
+                          {addon!.name}
+                        </li>
                       ))}
                     </ul>
                   )}
                 </div>
                 <span className="text-ink-800 font-semibold shrink-0">
-                  $
-                  {formatPrice(
-                    lineUnitPrice(menuItem, addonIds) * quantity
-                  )}
+                  ${formatPrice(unit * quantity)}
                 </span>
               </li>
             );
@@ -567,7 +583,7 @@ function VenmoPopup({ popup, onClose }: VenmoPopupProps) {
 
         <div className="mt-6 flex flex-col items-center gap-3">
           <button type="button" onClick={onClose} className="btn-dark">
-            done — view queue →
+            done, view queue  →
           </button>
         </div>
       </div>

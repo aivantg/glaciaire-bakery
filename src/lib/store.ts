@@ -19,13 +19,13 @@ export type MenuCategory = PrismaMenuCategory;
 export interface MenuItemAddon {
   id: string;
   name: string;
-  price: number; // cents
+  price: number | null; // cents; null or 0 = no upcharge on menu
   available: boolean;
 }
 
 export interface MenuItemAddonInput {
   name: string;
-  price: number; // cents
+  price: number | null; // cents
   available: boolean;
 }
 
@@ -35,6 +35,7 @@ export interface MenuItem {
   description: string;
   price: number; // cents
   available: boolean;
+  archived: boolean;
   category: MenuCategory;
   createdAt: string;
   addons: MenuItemAddon[];
@@ -83,12 +84,13 @@ type MenuItemRow = {
   description: string;
   price: number;
   available: boolean;
+  archived: boolean;
   category: PrismaMenuCategory;
   createdAt: Date;
   addons: {
     id: string;
     name: string;
-    price: number;
+    price: number | null;
     available: boolean;
   }[];
 };
@@ -124,6 +126,7 @@ function serializeMenuItem(row: MenuItemRow): MenuItem {
     description: row.description,
     price: row.price,
     available: row.available,
+    archived: row.archived,
     category: row.category,
     createdAt: row.createdAt.toISOString(),
     addons: row.addons.map((a) => ({
@@ -165,7 +168,8 @@ function normalizeAddonInputs(
   return addons
     .map((a) => ({
       name: a.name.trim(),
-      price: Math.round(a.price),
+      price:
+        a.price == null ? null : Math.max(0, Math.round(a.price)),
       available: a.available !== false,
     }))
     .filter((a) => a.name.length > 0);
@@ -175,6 +179,16 @@ function normalizeAddonInputs(
 
 export async function getAllMenuItems(): Promise<MenuItem[]> {
   const rows = await prisma.menuItem.findMany({
+    where: { archived: false },
+    orderBy: { createdAt: "asc" },
+    include: menuInclude,
+  });
+  return rows.map(serializeMenuItem);
+}
+
+export async function getArchivedMenuItems(): Promise<MenuItem[]> {
+  const rows = await prisma.menuItem.findMany({
+    where: { archived: true },
     orderBy: { createdAt: "asc" },
     include: menuInclude,
   });
@@ -182,15 +196,15 @@ export async function getAllMenuItems(): Promise<MenuItem[]> {
 }
 
 export async function getMenuItemById(id: string): Promise<MenuItem | null> {
-  const row = await prisma.menuItem.findUnique({
-    where: { id },
+  const row = await prisma.menuItem.findFirst({
+    where: { id, archived: false },
     include: menuInclude,
   });
   return row ? serializeMenuItem(row) : null;
 }
 
 export async function createMenuItem(
-  data: Omit<MenuItem, "id" | "createdAt" | "addons"> & {
+  data: Omit<MenuItem, "id" | "createdAt" | "addons" | "archived"> & {
     addons?: MenuItemAddonInput[];
   }
 ): Promise<MenuItem> {
@@ -213,7 +227,7 @@ export async function createMenuItem(
 
 export async function updateMenuItem(
   id: string,
-  data: Partial<Omit<MenuItem, "id" | "createdAt" | "addons">> & {
+  data: Partial<Omit<MenuItem, "id" | "createdAt" | "addons" | "archived">> & {
     addons?: MenuItemAddonInput[];
   }
 ): Promise<MenuItem | null> {
@@ -244,12 +258,32 @@ export async function updateMenuItem(
   }
 }
 
-export async function deleteMenuItem(id: string): Promise<boolean> {
+export async function archiveMenuItem(id: string): Promise<boolean> {
   try {
-    await prisma.menuItem.delete({ where: { id } });
-    return true;
+    const result = await prisma.menuItem.updateMany({
+      where: { id, archived: false },
+      data: { archived: true, available: false },
+    });
+    return result.count > 0;
   } catch {
     return false;
+  }
+}
+
+export async function unarchiveMenuItem(id: string): Promise<MenuItem | null> {
+  try {
+    const result = await prisma.menuItem.updateMany({
+      where: { id, archived: true },
+      data: { archived: false },
+    });
+    if (result.count === 0) return null;
+    const row = await prisma.menuItem.findUniqueOrThrow({
+      where: { id },
+      include: menuInclude,
+    });
+    return serializeMenuItem(row);
+  } catch {
+    return null;
   }
 }
 
@@ -259,8 +293,28 @@ const orderInclude = {
   items: { include: { addons: true } },
 };
 
+/** Active orders only — excludes soft-deleted rows. */
+const orderNotDeleted = { deletedAt: null } as const;
+
+/** Total units ordered per menu item (sum of line quantities). */
+export async function getMenuItemOrderCounts(): Promise<Record<string, number>> {
+  const rows = await prisma.orderItem.groupBy({
+    by: ["menuItemId"],
+    where: { menuItemId: { not: null }, order: orderNotDeleted },
+    _sum: { quantity: true },
+  });
+  const counts: Record<string, number> = {};
+  for (const row of rows) {
+    if (row.menuItemId) {
+      counts[row.menuItemId] = row._sum.quantity ?? 0;
+    }
+  }
+  return counts;
+}
+
 export async function getAllOrders(): Promise<Order[]> {
   const rows = await prisma.order.findMany({
+    where: orderNotDeleted,
     include: orderInclude,
     orderBy: { createdAt: "desc" },
   });
@@ -268,8 +322,8 @@ export async function getAllOrders(): Promise<Order[]> {
 }
 
 export async function getOrderById(id: string): Promise<Order | null> {
-  const row = await prisma.order.findUnique({
-    where: { id },
+  const row = await prisma.order.findFirst({
+    where: { id, ...orderNotDeleted },
     include: orderInclude,
   });
   return row ? serializeOrder(row) : null;
@@ -284,7 +338,7 @@ export async function createOrder(
 
   const ids = Array.from(new Set(data.items.map((i) => i.menuItemId)));
   const menuItems = await prisma.menuItem.findMany({
-    where: { id: { in: ids } },
+    where: { id: { in: ids }, archived: false },
     include: menuInclude,
   });
   const byId = new Map(menuItems.map((m) => [m.id, m]));
@@ -316,7 +370,10 @@ export async function createOrder(
       if (!addon.available) {
         return { error: `${addon.name} is not available` };
       }
-      selectedAddons.push({ name: addon.name, unitPrice: addon.price });
+      selectedAddons.push({
+        name: addon.name,
+        unitPrice: addon.price ?? 0,
+      });
     }
 
     const unitTotal =
@@ -360,30 +417,40 @@ export async function updateOrderStatus(
   id: string,
   status: OrderStatus
 ): Promise<Order | null> {
-  try {
-    const row = await prisma.order.update({
-      where: { id },
-      data: { status },
-      include: orderInclude,
-    });
-    return serializeOrder(row);
-  } catch {
-    return null;
-  }
+  const result = await prisma.order.updateMany({
+    where: { id, ...orderNotDeleted },
+    data: { status },
+  });
+  if (result.count === 0) return null;
+  return getOrderById(id);
 }
 
 export async function archiveOrder(
   id: string,
   archived: boolean
 ): Promise<Order | null> {
-  try {
-    const row = await prisma.order.update({
-      where: { id },
-      data: { archived },
-      include: orderInclude,
-    });
-    return serializeOrder(row);
-  } catch {
-    return null;
-  }
+  const result = await prisma.order.updateMany({
+    where: { id, ...orderNotDeleted },
+    data: { archived },
+  });
+  if (result.count === 0) return null;
+  return getOrderById(id);
+}
+
+/** Archives every done order that is not yet archived (the "finished" queue). */
+export async function archiveAllFinishedOrders(): Promise<number> {
+  const result = await prisma.order.updateMany({
+    where: { status: "done", archived: false, ...orderNotDeleted },
+    data: { archived: true },
+  });
+  return result.count;
+}
+
+/** Soft-deletes an archived order (sets deletedAt). */
+export async function deleteArchivedOrder(id: string): Promise<boolean> {
+  const result = await prisma.order.updateMany({
+    where: { id, archived: true, ...orderNotDeleted },
+    data: { deletedAt: new Date() },
+  });
+  return result.count > 0;
 }

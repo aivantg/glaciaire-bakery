@@ -3,6 +3,7 @@ import {
   getOrderById,
   updateOrderStatus,
   archiveOrder,
+  deleteArchivedOrder,
   OrderStatus,
 } from "@/lib/store";
 import { isHostAuthenticatedRequest } from "@/lib/host-session";
@@ -59,4 +60,19 @@ export async function PUT(request: NextRequest, { params }: Context) {
     { error: "Request must include status or archived" },
     { status: 400 }
   );
+}
+
+export async function DELETE(request: NextRequest, { params }: Context) {
+  if (!isHostAuthenticatedRequest(request)) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  const { id } = await params;
+  const deleted = await deleteArchivedOrder(id);
+  if (!deleted) {
+    return NextResponse.json(
+      { error: "Order not found or not archived" },
+      { status: 404 }
+    );
+  }
+  return NextResponse.json({ success: true });
 }

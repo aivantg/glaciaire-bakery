@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import {
   getMenuItemById,
   updateMenuItem,
-  deleteMenuItem,
+  archiveMenuItem,
+  unarchiveMenuItem,
   MenuCategory,
   type MenuItemAddonInput,
 } from "@/lib/store";
@@ -18,10 +19,13 @@ function parseAddons(body: unknown): MenuItemAddonInput[] | undefined {
     if (!raw || typeof raw !== "object") continue;
     const { name, price, available } = raw as Record<string, unknown>;
     if (typeof name !== "string" || name.trim() === "") continue;
-    if (typeof price !== "number" || price < 0) continue;
+    let cents: number | null = null;
+    if (typeof price === "number" && !Number.isNaN(price) && price >= 0) {
+      cents = Math.round(price);
+    }
     addons.push({
       name: name.trim(),
-      price: Math.round(price),
+      price: cents,
       available: available !== false,
     });
   }
@@ -44,13 +48,22 @@ export async function PUT(request: NextRequest, { params }: Context) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   const { id } = await params;
+  const body = await request.json();
+  const { name, description, price, available, category, addons, archived } =
+    body;
+
+  if (archived === false) {
+    const item = await unarchiveMenuItem(id);
+    if (!item) {
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
+    return NextResponse.json(item);
+  }
+
   const existing = await getMenuItemById(id);
   if (!existing) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
-
-  const body = await request.json();
-  const { name, description, price, available, category, addons } = body;
 
   const updates: Parameters<typeof updateMenuItem>[1] = {};
   if (name !== undefined) {
@@ -92,8 +105,8 @@ export async function DELETE(request: NextRequest, { params }: Context) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   const { id } = await params;
-  const deleted = await deleteMenuItem(id);
-  if (!deleted) {
+  const archived = await archiveMenuItem(id);
+  if (!archived) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
   return NextResponse.json({ success: true });

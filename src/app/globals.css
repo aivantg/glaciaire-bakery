@@ -174,6 +174,92 @@ body {
   transform: scale(1.15);
 }
 
+/* ── Add-on toggles on the order menu (pill chips, not checkboxes) ─────────── */
+.addon-chip {
+  font-family: "Inter", sans-serif;
+  font-weight: 600;
+  font-size: 0.875rem;
+  line-height: 1.2;
+  padding: 0.4rem 0.9rem;
+  border-radius: 9999px;
+  border: 1.5px solid rgba(10, 10, 10, 0.28);
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+  transition:
+    background 120ms ease,
+    border-color 120ms ease,
+    color 120ms ease,
+    transform 120ms ease;
+  -webkit-tap-highlight-color: transparent;
+}
+.addon-chip:hover {
+  border-color: var(--ink);
+  background: rgba(10, 10, 10, 0.05);
+}
+.addon-chip[aria-pressed="true"] {
+  border-color: transparent;
+  color: #ffffff;
+}
+.addon-chip[aria-pressed="true"]:hover {
+  transform: scale(1.03);
+}
+
+/* ── Pill action buttons (queue admin, etc.) — oval outline like add-on chips ─ */
+.action-chip {
+  font-family: "Inter", sans-serif;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  line-height: 1.2;
+  padding: 0.45rem 1rem;
+  border-radius: 9999px;
+  border: 1.5px solid rgba(10, 10, 10, 0.28);
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+  transition:
+    background 120ms ease,
+    border-color 120ms ease,
+    color 120ms ease,
+    transform 120ms ease;
+  -webkit-tap-highlight-color: transparent;
+}
+.action-chip:hover:not(:disabled) {
+  border-color: var(--ink);
+  background: rgba(10, 10, 10, 0.05);
+}
+.action-chip:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.action-chip--confirm {
+  color: #ef4444;
+  border-color: rgba(239, 68, 68, 0.45);
+}
+.action-chip--confirm:hover:not(:disabled) {
+  border-color: #ef4444;
+  background: rgba(239, 68, 68, 0.06);
+}
+.action-chip--sm {
+  font-size: 0.625rem;
+  padding: 0.2rem 0.65rem;
+  letter-spacing: 0.05em;
+}
+.action-chip--danger {
+  color: #c8377a;
+  border-color: rgba(200, 55, 122, 0.35);
+}
+.action-chip--danger:hover:not(:disabled) {
+  border-color: #c8377a;
+  background: rgba(200, 55, 122, 0.06);
+}
+.action-chip--danger.action-chip--confirm {
+  color: #ef4444;
+  border-color: rgba(239, 68, 68, 0.45);
+}
+
 /* ── Status text (uppercase bold-sans) ──────────────────────────────────────── */
 .status-text {
   font-family: "Inter", sans-serif;

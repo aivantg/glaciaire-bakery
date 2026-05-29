@@ -20,6 +20,8 @@ import { LoadingState } from "@/components/shared/LoadingState";
 import { ErrorState } from "@/components/shared/ErrorState";
 
 const CONFIRM_MS = 3000;
+const HOST_POLL_MS = 3000;
+const CUSTOMER_POLL_MS = 10000;
 
 export default function OrdersPage() {
   const { authenticated } = useHostSession();
@@ -78,9 +80,12 @@ export default function OrdersPage() {
 
   useEffect(() => {
     fetchOrders();
-    const interval = setInterval(fetchOrders, 3000);
+    const interval = setInterval(
+      fetchOrders,
+      authenticated ? HOST_POLL_MS : CUSTOMER_POLL_MS
+    );
     return () => clearInterval(interval);
-  }, [fetchOrders]);
+  }, [authenticated, fetchOrders]);
 
   useEffect(() => {
     const interval = setInterval(() => setNow(Date.now()), 30000);

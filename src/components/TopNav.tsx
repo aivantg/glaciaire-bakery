@@ -9,10 +9,10 @@ export function TopNav() {
   const pathname = usePathname();
 
   let counterpart: { href: string; label: string } | null = null;
-  if (pathname === "/order") {
+  if (pathname === "/" || pathname === "/order") {
     counterpart = { href: "/orders", label: "queue" };
   } else if (pathname === "/orders") {
-    counterpart = { href: "/order", label: "menu" };
+    counterpart = { href: "/", label: "menu" };
   }
 
   return (

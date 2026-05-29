@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useHostSession } from "@/hooks/useHostSession";
 
-const FOOTER_PATHS = ["/order", "/orders"];
+const FOOTER_PATHS = ["/", "/order", "/orders"];
 
 export function HostFooterLink() {
   const pathname = usePathname();

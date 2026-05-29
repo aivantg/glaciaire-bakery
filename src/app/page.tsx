@@ -1,5 +1,7 @@
-import { redirect } from "next/navigation";
+"use client";
 
-export default function Home() {
-  redirect("/order");
+import { OrderPageContent } from "@/components/order/OrderPageContent";
+
+export default function HomePage() {
+  return <OrderPageContent />;
 }

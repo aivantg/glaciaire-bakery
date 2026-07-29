@@ -1,8 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { TopNav } from "@/components/TopNav";
-import { HostFooterLink } from "@/components/HostFooterLink";
-import { MadeWithLoveLink } from "@/components/MadeWithLoveLink";
+import { SiteFooter } from "@/components/SiteFooter";
 
 export const metadata: Metadata = {
   title: "Glaciaire",
@@ -29,10 +28,7 @@ export default function RootLayout({
           {children}
         </main>
 
-        <footer className="text-center pt-8 pb-10 px-4 flex flex-col items-center gap-3">
-          <HostFooterLink />
-          <MadeWithLoveLink />
-        </footer>
+        <SiteFooter />
       </body>
     </html>
   );

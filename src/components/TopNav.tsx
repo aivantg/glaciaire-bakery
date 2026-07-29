@@ -8,6 +8,9 @@ import logo from "@/app/logo.jpg";
 export function TopNav() {
   const pathname = usePathname();
 
+  // The /stonefruit preview site brings its own peach-themed header.
+  if (pathname?.startsWith("/stonefruit")) return null;
+
   let counterpart: { href: string; label: string } | null = null;
   if (pathname === "/" || pathname === "/order") {
     counterpart = { href: "/orders", label: "queue" };

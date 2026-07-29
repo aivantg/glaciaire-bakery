@@ -52,6 +52,16 @@ const config: Config = {
         cream: {
           100: "#fdfdee",
         },
+        // Soft peach palette — identity for the /stonefruit preview site
+        peach: {
+          50: "#fff6f0",
+          100: "#ffe8d6", // page background
+          200: "#ffd8bd",
+          300: "#ffbf95",
+          400: "#ff9e6d",
+          500: "#f47f45",
+          700: "#c85f2a",
+        },
         // Per-item ink palette for colored menu names
         item: {
           brown: "#5a3a1a",

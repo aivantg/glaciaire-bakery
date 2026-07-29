@@ -1,0 +1,632 @@
+/* Stonefruit picnic intro — sky fall → picnic surprise */
+
+.stonefruit-experience {
+  --sf-sky-top: #7ec8eb;
+  --sf-ink: #3a2a1a;
+  --sf-accent: #c85f2a;
+  position: relative;
+  min-height: 100dvh;
+  width: calc(100% + 2rem);
+  margin-left: -1rem;
+  margin-right: -1rem;
+  margin-bottom: -3rem;
+  color: var(--sf-ink);
+  isolation: isolate;
+}
+
+@media (min-width: 640px) {
+  .stonefruit-experience {
+    width: calc(100% + 3rem);
+    margin-left: -1.5rem;
+    margin-right: -1.5rem;
+  }
+}
+
+/* Clipped viewport — the camera pans inside this */
+.sf-viewport {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+  background: #5bb4e0;
+}
+
+.sf-camera {
+  will-change: transform;
+  transform: translate3d(0, 0, 0);
+}
+
+.sf-camera--sky {
+  transform: translate3d(0, 0, 0);
+}
+
+.sf-camera--falling {
+  animation: sfCameraFall var(--sf-camera-fall, 1400ms)
+    linear both;
+}
+
+.sf-camera--at-picnic {
+  transform: translate3d(0, calc(var(--sf-camera-travel, 130vh) * -1), 0);
+  animation: none;
+}
+
+/* Camera follows the pack: restrained at first, then commits to the plunge. */
+@keyframes sfCameraFall {
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+  18% {
+    transform: translate3d(0, calc(var(--sf-camera-travel, 138vh) * -0.03), 0);
+  }
+  50% {
+    transform: translate3d(0, calc(var(--sf-camera-travel, 138vh) * -0.2), 0);
+  }
+  78% {
+    transform: translate3d(0, calc(var(--sf-camera-travel, 138vh) * -0.58), 0);
+  }
+  92% {
+    transform: translate3d(0, calc(var(--sf-camera-travel, 138vh) * -0.9), 0);
+  }
+  100% {
+    transform: translate3d(0, calc(var(--sf-camera-travel, 138vh) * -1), 0);
+  }
+}
+
+.sf-world {
+  position: relative;
+  width: 100%;
+}
+
+/* Picnic sits in the bottom 100vh of the tall world */
+.sf-picnic-zone {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.sf-header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: max(0.75rem, env(safe-area-inset-top)) 1rem 0.5rem;
+  pointer-events: auto;
+}
+
+.sf-header-spacer {
+  width: min(58vw, 11.5rem);
+  height: 2.5rem;
+  flex-shrink: 0;
+}
+
+.sf-skip {
+  appearance: none;
+  border: 1.5px solid rgba(200, 95, 42, 0.45);
+  background: rgba(255, 246, 240, 0.72);
+  backdrop-filter: blur(8px);
+  color: #c85f2a;
+  font-family: Inter, system-ui, sans-serif;
+  font-weight: 700;
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  border-radius: 9999px;
+  padding: 0.45rem 0.9rem;
+  cursor: pointer;
+  pointer-events: auto;
+  transition: background 120ms ease, transform 120ms ease;
+}
+
+.sf-skip:hover {
+  background: rgba(255, 246, 240, 0.95);
+  transform: translateY(-1px);
+}
+
+.sf-skip:focus-visible {
+  outline: 2px solid #c85f2a;
+  outline-offset: 2px;
+}
+
+/* ── “Glaciaire bakery” — pops from basket, settles top-left ─────────────── */
+
+.sf-glaciaire {
+  position: fixed;
+  z-index: 45;
+  top: max(0.65rem, env(safe-area-inset-top));
+  left: 1rem;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  line-height: 0.92;
+  text-decoration: none;
+  color: #c85f2a;
+  transform-origin: left top;
+  pointer-events: auto;
+  text-shadow: 0 1px 0 rgba(255, 246, 240, 0.5);
+}
+
+.sf-glaciaire-name {
+  font-family: "Archivo Black", Inter, system-ui, sans-serif;
+  font-weight: 900;
+  font-size: clamp(1.55rem, 6.2vw, 2rem);
+  letter-spacing: -0.04em;
+  text-transform: lowercase;
+}
+
+.sf-glaciaire-bakery {
+  font-family: Inter, system-ui, sans-serif;
+  font-style: italic;
+  font-weight: 800;
+  font-size: clamp(0.78rem, 3.2vw, 0.95rem);
+  letter-spacing: 0.02em;
+  color: #a34a1f;
+  margin-top: 0.05rem;
+}
+
+.sf-glaciaire--hidden {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  /* Start deep in the basket mouth */
+  transform: translate3d(
+      calc(50vw - 1rem - 5.5rem),
+      calc(100dvh - 8.5rem - max(0.65rem, env(safe-area-inset-top))),
+      0
+    )
+    scale(0.12);
+}
+
+.sf-glaciaire--popping {
+  visibility: visible;
+  /* Sit under the front lip while emerging, then clear it */
+  z-index: 26;
+  animation: sfGlaciairePop var(--sf-menu-rise, 780ms)
+    cubic-bezier(0.2, 0.75, 0.18, 1) both;
+}
+
+.sf-glaciaire--settled {
+  visibility: visible;
+  opacity: 1;
+  transform: translate3d(0, 0, 0) scale(1);
+  animation: none;
+  z-index: 45;
+}
+
+.sf-glaciaire--settled:hover {
+  opacity: 0.85;
+}
+
+@keyframes sfGlaciairePop {
+  0% {
+    opacity: 0;
+    z-index: 26;
+    transform: translate3d(
+        calc(50vw - 1rem - 5.5rem),
+        calc(100dvh - 8.5rem - max(0.65rem, env(safe-area-inset-top))),
+        0
+      )
+      scale(0.1)
+      rotate(-4deg);
+  }
+  /* Peek from the basket mouth — still under the front lip */
+  22% {
+    opacity: 1;
+    z-index: 26;
+    transform: translate3d(
+        calc(50vw - 1rem - 5.5rem),
+        calc(100dvh - 16rem - max(0.65rem, env(safe-area-inset-top))),
+        0
+      )
+      scale(0.55)
+      rotate(3deg);
+  }
+  /* Clear the rim and grow */
+  48% {
+    opacity: 1;
+    z-index: 45;
+    transform: translate3d(
+        calc(36vw - 1rem - 3rem),
+        calc(34vh - max(0.65rem, env(safe-area-inset-top))),
+        0
+      )
+      scale(1.2)
+      rotate(-1deg);
+  }
+  72% {
+    opacity: 1;
+    transform: translate3d(0.3rem, 0.25rem, 0) scale(1.04) rotate(0.5deg);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1) rotate(0deg);
+  }
+}
+
+/* ── Fruit sprites (world-space) ─────────────────────────────────────────── */
+
+.sf-fruit {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: var(--sf-size, 112px);
+  height: var(--sf-size, 112px);
+  margin-left: calc(var(--sf-size, 112px) / -2);
+  margin-top: calc(var(--sf-size, 112px) / -2);
+  /* Resting sky pose until fall animation attaches */
+  opacity: 1;
+  transform: translate3d(var(--sf-start-x), var(--sf-start-y), 0)
+    rotate(var(--sf-rot-start)) scale(var(--sf-sky-scale));
+  will-change: transform, opacity;
+  pointer-events: none;
+}
+
+/* Idle sky drift removed — fruits begin gravity fall immediately for physics feel */
+
+/*
+ * Gravity fall is plotted with quadratic Y samples. Linear interpolation
+ * between those samples avoids applying a second easing curve on top.
+ */
+.sf-fruit--falling {
+  animation: sfFruitFall var(--sf-fall, 1900ms) linear var(--sf-delay, 0ms) both;
+}
+
+.sf-fruit--bouncing {
+  animation: sfFruitBounce var(--sf-bounce, 240ms) cubic-bezier(0.34, 1.45, 0.64, 1)
+    both;
+}
+
+.sf-fruit--settled {
+  opacity: 1;
+  transform: translate3d(var(--sf-land-x), var(--sf-land-y), 0)
+    rotate(var(--sf-rot-end)) scale(var(--sf-land-scale));
+  animation: none;
+}
+
+@keyframes sfFruitFall {
+  0% {
+    opacity: 1;
+    transform: translate3d(var(--sf-start-x), var(--sf-start-y), 0)
+      rotate(var(--sf-rot-start)) scale(var(--sf-sky-scale));
+  }
+  /* t² distance samples: 5.5%, 31%, 69%, then impact. */
+  22% {
+    transform: translate3d(var(--sf-mid-x), var(--sf-y1), 0)
+      rotate(var(--sf-rot-1))
+      scale(var(--sf-sky-scale));
+  }
+  55% {
+    transform: translate3d(var(--sf-x2), var(--sf-y2), 0)
+      rotate(var(--sf-rot-mid))
+      scale(var(--sf-mid-scale));
+  }
+  83% {
+    transform: translate3d(var(--sf-x3), var(--sf-y3), 0)
+      rotate(var(--sf-rot-3))
+      scale(var(--sf-mid-scale));
+  }
+  /* A short final rush into the mouth gives the impact a crisp edge. */
+  94% {
+    opacity: 1;
+    transform: translate3d(var(--sf-land-x), calc(var(--sf-land-y) - 2.5vh), 0)
+      rotate(calc(var(--sf-rot-end) - 14deg))
+      scale(var(--sf-land-scale));
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(var(--sf-land-x), var(--sf-land-y), 0)
+      rotate(var(--sf-rot-end)) scale(var(--sf-land-scale));
+  }
+}
+
+@keyframes sfFruitBounce {
+  0% {
+    transform: translate3d(var(--sf-land-x), var(--sf-land-y), 0)
+      rotate(var(--sf-rot-end)) scale(var(--sf-land-scale));
+  }
+  35% {
+    transform: translate3d(var(--sf-land-x), calc(var(--sf-land-y) - var(--sf-bounce-lift, 1.5vh)), 0)
+      rotate(calc(var(--sf-rot-end) - 5deg))
+      scale(var(--sf-land-scale));
+  }
+  100% {
+    transform: translate3d(var(--sf-land-x), var(--sf-land-y), 0)
+      rotate(var(--sf-rot-end)) scale(var(--sf-land-scale));
+  }
+}
+
+/* ── Basket layers ───────────────────────────────────────────────────────── */
+
+.sf-basket-back {
+  position: absolute;
+  left: 50%;
+  bottom: max(1.25rem, env(safe-area-inset-bottom));
+  width: min(68vw, 250px);
+  transform: translateX(-50%);
+  z-index: 5;
+}
+
+.sf-basket-img {
+  display: block;
+  width: 100%;
+  height: auto;
+  filter: drop-shadow(0 10px 18px rgba(42, 53, 24, 0.35));
+}
+
+/* Front lip is a FIXED overlay matching the parked picnic basket position,
+   clipped to the lower body so emerging UI peeks out of the mouth. */
+.sf-basket-front {
+  position: fixed;
+  left: 50%;
+  bottom: max(1.25rem, env(safe-area-inset-bottom));
+  width: min(68vw, 250px);
+  transform: translateX(-50%);
+  z-index: 28;
+  pointer-events: none;
+}
+
+.sf-basket-front-clip {
+  /* Keep the lower body + rim lip; hide the tall handle so it doesn't
+     cover the rising menu. */
+  height: 58%;
+  margin-top: 42%;
+  overflow: hidden;
+}
+
+.sf-basket-front-clip .sf-basket-img {
+  margin-top: -72.4%; /* pull full image up so the lower body fills the clip */
+  filter: drop-shadow(0 8px 14px rgba(42, 53, 24, 0.28));
+}
+
+/* ── Basket / grass — two soft wiggles, ~0.5s apart ──────────────────────── */
+
+@keyframes sfBasketRustle {
+  /* Wiggle 1 */
+  0% {
+    transform: translateX(-50%) rotate(0deg);
+  }
+  6% {
+    transform: translateX(calc(-50% - 5px)) rotate(-2deg);
+  }
+  12% {
+    transform: translateX(calc(-50% + 5px)) rotate(2.2deg);
+  }
+  18% {
+    transform: translateX(calc(-50% - 2px)) rotate(-1deg);
+  }
+  22% {
+    transform: translateX(-50%) rotate(0deg);
+  }
+  /* Rest ~0.5s (22% → 72% of 920ms ≈ 460ms) */
+  72% {
+    transform: translateX(-50%) rotate(0deg);
+  }
+  /* Wiggle 2 */
+  78% {
+    transform: translateX(calc(-50% - 6px)) rotate(-2.4deg);
+  }
+  84% {
+    transform: translateX(calc(-50% + 6px)) rotate(2.6deg);
+  }
+  90% {
+    transform: translateX(calc(-50% - 2px)) rotate(-0.8deg);
+  }
+  96%,
+  100% {
+    transform: translateX(-50%) rotate(0deg);
+  }
+}
+
+@keyframes sfGrassRustle {
+  0%,
+  22%,
+  72%,
+  100% {
+    transform: translateX(0);
+  }
+  8% {
+    transform: translateX(-3px);
+  }
+  14% {
+    transform: translateX(3px);
+  }
+  80% {
+    transform: translateX(-3px);
+  }
+  86% {
+    transform: translateX(3px);
+  }
+}
+
+.sf-basket-rustle {
+  animation: sfBasketRustle var(--sf-rustle, 920ms) linear;
+  transform-origin: center bottom;
+}
+
+.sf-grass-rustle {
+  animation: sfGrassRustle var(--sf-rustle, 920ms) linear;
+}
+
+/* ── Menu rising out of the basket mouth ─────────────────────────────────── */
+
+.sf-menu-shell {
+  position: relative;
+  z-index: 22; /* between basket back (in world) and fixed front lip (28) */
+  width: min(100%, 26rem);
+  margin: 0 auto;
+  padding: 4.75rem 0 max(13.5rem, calc(env(safe-area-inset-bottom) + 12.5rem));
+  pointer-events: auto;
+}
+
+.sf-menu-panel {
+  background: rgba(255, 246, 240, 0.92);
+  backdrop-filter: blur(14px) saturate(1.15);
+  border: 1.5px solid rgba(200, 95, 42, 0.28);
+  border-radius: 1.5rem;
+  box-shadow:
+    0 18px 50px -18px rgba(90, 46, 18, 0.45),
+    0 2px 0 rgba(255, 255, 255, 0.65) inset;
+  padding: 1.25rem 1rem 1.5rem;
+  /* Grow upward out of the basket mouth */
+  transform-origin: 50% 100%;
+  opacity: 0;
+  transform: translate3d(0, 48vh, 0) scale(0.18);
+  max-height: calc(100dvh - 17.25rem);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+}
+
+.sf-menu-panel--hidden {
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.sf-menu-panel--rising {
+  visibility: visible;
+  animation: sfMenuRise var(--sf-menu-rise, 780ms) cubic-bezier(0.2, 0.75, 0.2, 1)
+    both;
+}
+
+.sf-menu-panel--visible {
+  visibility: visible;
+  opacity: 1;
+  transform: translate3d(0, 0, 0) scale(1);
+  animation: none;
+  pointer-events: auto;
+  /* Once settled, sit above the front lip so controls aren't covered */
+  position: relative;
+  z-index: 30;
+}
+
+@keyframes sfMenuRise {
+  0% {
+    opacity: 0;
+    /* Deep in the basket — tiny and low, mostly hidden by the front lip */
+    transform: translate3d(0, 52vh, 0) scale(0.14);
+    clip-path: inset(70% 18% 0 18% round 1rem);
+  }
+  18% {
+    opacity: 1;
+    /* Peeking out of the mouth */
+    transform: translate3d(0, 38vh, 0) scale(0.32);
+    clip-path: inset(48% 12% 0 12% round 1.1rem);
+  }
+  42% {
+    opacity: 1;
+    transform: translate3d(0, 16vh, 0) scale(0.72);
+    clip-path: inset(12% 4% 0 4% round 1.35rem);
+  }
+  68% {
+    opacity: 1;
+    transform: translate3d(0, -1.5vh, 0) scale(1.03);
+    clip-path: inset(0 0 0 0 round 1.5rem);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+    clip-path: inset(0 0 0 0 round 1.5rem);
+  }
+}
+
+.sf-menu-panel .hero-stack {
+  color: #c85f2a;
+  font-size: clamp(3.5rem, 18vw, 6.5rem);
+  line-height: 0.86;
+}
+
+.sf-menu-panel .tagline,
+.sf-menu-panel .section-row .label {
+  color: #c85f2a;
+}
+
+.sf-menu-panel .btn-dark {
+  background: #c85f2a;
+}
+
+.sf-menu-panel .btn-dark:hover:not(:disabled) {
+  background: #a34a1f;
+}
+
+.sf-menu-panel .addon-chip[aria-pressed="true"] {
+  background: #f47f45;
+}
+
+.sf-menu-panel .modal-card {
+  background: #fff6f0;
+  border-color: #c85f2a;
+}
+
+.sf-menu-panel .list-hairline > * + * {
+  border-top-color: rgba(200, 95, 42, 0.16);
+}
+
+@media (min-width: 768px) {
+  .sf-menu-shell {
+    width: min(100%, 28rem);
+    padding-top: 4.75rem;
+  }
+
+  .sf-header {
+    padding-left: 1.75rem;
+    padding-right: 1.75rem;
+  }
+
+  .sf-glaciaire {
+    left: 1.75rem;
+  }
+
+  .sf-fruit {
+    width: calc(var(--sf-size, 112px) * 1.08);
+    height: calc(var(--sf-size, 112px) * 1.08);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sf-fruit,
+  .sf-fruit--sky,
+  .sf-fruit--falling,
+  .sf-fruit--bouncing,
+  .sf-camera--falling,
+  .sf-basket-rustle,
+  .sf-grass-rustle,
+  .sf-menu-panel--rising,
+  .sf-glaciaire--popping {
+    animation: none !important;
+  }
+
+  .sf-camera,
+  .sf-camera--sky,
+  .sf-camera--falling,
+  .sf-camera--at-picnic {
+    transform: translate3d(0, calc(var(--sf-camera-travel, 130vh) * -1), 0);
+  }
+
+  .sf-fruit {
+    opacity: 1;
+    transform: translate3d(var(--sf-land-x), var(--sf-land-y), 0)
+      rotate(var(--sf-rot-end)) scale(var(--sf-land-scale));
+  }
+
+  .sf-menu-panel--rising,
+  .sf-menu-panel--visible {
+    opacity: 1;
+    transform: none;
+  }
+
+  .sf-glaciaire--hidden,
+  .sf-glaciaire--popping,
+  .sf-glaciaire--settled {
+    visibility: visible;
+    opacity: 1;
+    transform: none;
+  }
+}

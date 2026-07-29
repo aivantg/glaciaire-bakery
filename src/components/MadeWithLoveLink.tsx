@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 
 const LOVE_ITEMS = ["cookies", "matcha", "passionfruit", "cruffins"] as const;
 
@@ -9,11 +10,15 @@ function pickRandomItem() {
 }
 
 export function MadeWithLoveLink() {
+  const pathname = usePathname();
   const [item, setItem] = useState<(typeof LOVE_ITEMS)[number]>("cookies");
 
   useEffect(() => {
     setItem(pickRandomItem());
   }, []);
+
+  // Stonefruit owns a full-bleed scenic experience — hide the global credit.
+  if (pathname?.startsWith("/stonefruit")) return null;
 
   return (
     <a

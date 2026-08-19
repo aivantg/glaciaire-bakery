@@ -21,8 +21,9 @@ type FitLock = {
 
 /**
  * Sizes the picnic page so illustrated clouds sit just under the menu and the
- * meadow pins near the bottom of the viewport (esp. tall iPads). Page height is
- * locked on load / resize; later stage growth is absorbed into cloud underlap.
+ * meadow pins near the bottom of the viewport. Prefers a single no-scroll
+ * screen when content fits; scales the ground down on very wide viewports
+ * instead of forcing scroll just for the art.
  */
 export function StonefruitSkyFit() {
   useEffect(() => {
@@ -35,8 +36,6 @@ export function StonefruitSkyFit() {
     function measureCloudUnder(stageH: number, groundH: number, vh: number) {
       const flatSky = groundH * FLAT_SKY_RATIO;
       const preHill = groundH * PRE_HILL_RATIO;
-      // Pull flat upper sky under the stage so puffy clouds sit close below CTA.
-      // On tall viewports, also pin the meadow toward the bottom of the screen.
       const pinMeadowToBottom = stageH + groundH - vh;
       return Math.max(0, Math.min(preHill, Math.max(flatSky, pinMeadowToBottom)));
     }
@@ -61,10 +60,22 @@ export function StonefruitSkyFit() {
       const stageH = measureStageContentH();
       const vw = root.getBoundingClientRect().width || window.innerWidth;
       const vh = window.innerHeight;
-      const groundH = vw * GROUND_ASPECT;
-      const cloudUnder = measureCloudUnder(stageH, groundH, vh);
-      // Fill the viewport; extra height stays as sky above the meadow.
-      const totalH = Math.max(vh, stageH - cloudUnder + groundH);
+      const naturalGroundH = vw * GROUND_ASPECT;
+
+      let groundH = naturalGroundH;
+      let cloudUnder = measureCloudUnder(stageH, groundH, vh);
+      let totalH = stageH - cloudUnder + groundH;
+
+      // If the menu fits but the width-scaled picnic art overflows the
+      // viewport, shrink the ground so one screen is enough.
+      if (stageH < vh && totalH > vh) {
+        const maxGroundToFit = (vh - stageH) / (1 - PRE_HILL_RATIO);
+        groundH = Math.max(vh * 0.28, Math.min(naturalGroundH, maxGroundToFit));
+        cloudUnder = measureCloudUnder(stageH, groundH, vh);
+        totalH = Math.min(vh, stageH - cloudUnder + groundH);
+      }
+
+      totalH = Math.max(vh, totalH);
 
       lock = {
         baseStageH: stageH,
@@ -75,6 +86,7 @@ export function StonefruitSkyFit() {
 
       root.style.setProperty("--sf-fit-height", `${Math.ceil(totalH)}px`);
       root.style.setProperty("--sf-cloud-under", `${Math.round(cloudUnder)}px`);
+      root.style.setProperty("--sf-ground-height", `${Math.round(groundH)}px`);
       root.style.setProperty(
         "--sf-ground-pane",
         `${Math.round(Math.max(0, groundH - cloudUnder))}px`
@@ -88,6 +100,12 @@ export function StonefruitSkyFit() {
       }
 
       const stageH = measureStageContentH();
+      // Re-fit when content changes a lot (sold-out rows, admin edits, etc.).
+      if (Math.abs(stageH - lock.baseStageH) > 24) {
+        relock();
+        return;
+      }
+
       const delta = stageH - lock.baseStageH;
       const cloudUnder = Math.max(
         0,
@@ -95,8 +113,10 @@ export function StonefruitSkyFit() {
       );
 
       root.style.setProperty("--sf-cloud-under", `${Math.round(cloudUnder)}px`);
-      const vw = root.getBoundingClientRect().width || window.innerWidth;
-      const groundH = vw * GROUND_ASPECT;
+      const groundH =
+        Number.parseFloat(
+          getComputedStyle(root).getPropertyValue("--sf-ground-height")
+        ) || window.innerWidth * GROUND_ASPECT;
       root.style.setProperty(
         "--sf-ground-pane",
         `${Math.round(Math.max(0, groundH - cloudUnder))}px`
@@ -121,6 +141,7 @@ export function StonefruitSkyFit() {
       window.removeEventListener("resize", onResize);
       root.style.removeProperty("--sf-fit-height");
       root.style.removeProperty("--sf-cloud-under");
+      root.style.removeProperty("--sf-ground-height");
       root.style.removeProperty("--sf-ground-pane");
       root.style.removeProperty("--sf-queue-pad-top");
     };

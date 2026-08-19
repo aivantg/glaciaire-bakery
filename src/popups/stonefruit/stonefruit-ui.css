@@ -184,16 +184,19 @@
   width: 100%;
   margin-top: calc(-1 * var(--sf-cloud-under, 0px));
   flex: 0 0 auto;
-  min-height: calc(100vw * 840 / 1164);
+  min-height: var(--sf-ground-height, calc(100vw * 840 / 1164));
+  height: var(--sf-ground-height, calc(100vw * 840 / 1164));
   /* If the block grows taller than the art, meadow green continues below it. */
   background-color: #8ba85c;
   background-image: url("/stonefruit/background_base.png");
-  background-size: 100% auto;
+  /* Stretch to the fitted height so wide screens can stay one-viewport. */
+  background-size: 100% 100%;
   background-position: center top;
   background-repeat: no-repeat;
   /* Extend meadow green into the iOS home-indicator safe area. */
   padding-bottom: env(safe-area-inset-bottom, 0px);
   box-sizing: content-box;
+  overflow: hidden;
 }
 
 /* Admin/host: same underlap as menu/queue — content sits on the sky/clouds,

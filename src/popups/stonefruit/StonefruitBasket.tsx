@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import { usePathname, useRouter } from "next/navigation";
 import {
   useCallback,
   useEffect,
@@ -8,6 +9,10 @@ import {
   useState,
   type CSSProperties,
 } from "react";
+import { useHostSession } from "@/hooks/useHostSession";
+
+const HOST_TAPS = 5;
+const TAP_RESET_MS = 2500;
 
 type FruitSlot = {
   left: string;
@@ -98,6 +103,21 @@ function pickFruits(): BasketFruit[] {
   return fruitsFromFiles(shuffle(DECORATOR_FILES).slice(0, SLOTS.length));
 }
 
+function currentRotationDeg(el: Element): number {
+  const t = getComputedStyle(el).transform;
+  if (!t || t === "none") return 0;
+  const m = new DOMMatrixReadOnly(t);
+  return (Math.atan2(m.b, m.a) * 180) / Math.PI;
+}
+
+function parseDeg(value: string): number {
+  return Number.parseFloat(value) || 0;
+}
+
+function parsePx(value: string): number {
+  return Number.parseFloat(value) || 0;
+}
+
 function Fruit({ fruit }: { fruit: BasketFruit }) {
   return (
     // eslint-disable-next-line @next/next/no-img-element
@@ -105,6 +125,10 @@ function Fruit({ fruit }: { fruit: BasketFruit }) {
       src={fruit.src}
       alt=""
       className="sf-basket-fruit"
+      data-rest-rot={fruit.rot}
+      data-jx={fruit.jx}
+      data-jy={fruit.jy}
+      data-jr={fruit.jr}
       style={
         {
           left: fruit.left,
@@ -112,10 +136,6 @@ function Fruit({ fruit }: { fruit: BasketFruit }) {
           width: fruit.width,
           zIndex: fruit.z,
           "--sf-rest-rot": fruit.rot,
-          "--sf-delay": fruit.delay,
-          "--sf-jx": fruit.jx,
-          "--sf-jy": fruit.jy,
-          "--sf-jr": fruit.jr,
         } as CSSProperties
       }
       draggable={false}
@@ -124,11 +144,18 @@ function Fruit({ fruit }: { fruit: BasketFruit }) {
 }
 
 export function StonefruitBasket() {
+  const router = useRouter();
+  const pathname = usePathname();
+  const { authenticated } = useHostSession();
+  const basketRef = useRef<HTMLButtonElement>(null);
+  const fillRef = useRef<HTMLSpanElement>(null);
+  const wiggleSign = useRef(1);
   const [fruits, setFruits] = useState(() =>
     fruitsFromFiles(DECORATOR_FILES.slice(0, SLOTS.length))
   );
-  const [rustling, setRustling] = useState(false);
   const reduced = useRef(false);
+  const tapCount = useRef(0);
+  const tapTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   useEffect(() => {
     reduced.current = window.matchMedia(
@@ -137,21 +164,111 @@ export function StonefruitBasket() {
     setFruits(pickFruits());
   }, []);
 
+  useEffect(
+    () => () => {
+      clearTimeout(tapTimer.current);
+    },
+    []
+  );
+
   const rustle = useCallback(() => {
     if (reduced.current) return;
-    setRustling(false);
-    requestAnimationFrame(() => setRustling(true));
+    const basket = basketRef.current;
+    if (!basket) return;
+
+    const from = currentRotationDeg(basket);
+    basket.getAnimations().forEach((a) => a.cancel());
+    // Keep the pose we were in so the next keyframe starts there.
+    basket.style.transform = `rotate(${from}deg)`;
+
+    wiggleSign.current *= -1;
+    const peak = wiggleSign.current * (2.1 + Math.random() * 1.4);
+    const mid = -peak * (0.55 + Math.random() * 0.25);
+
+    const anim = basket.animate(
+      [
+        { transform: `rotate(${from}deg)` },
+        { transform: `rotate(${peak}deg)`, offset: 0.32 },
+        { transform: `rotate(${mid}deg)`, offset: 0.62 },
+        { transform: "rotate(0deg)" },
+      ],
+      { duration: 420, easing: "ease-in-out", fill: "forwards" }
+    );
+    anim.finished
+      .then(() => {
+        basket.style.transform = "";
+      })
+      .catch(() => {
+        /* cancelled by a later tap */
+      });
+
+    fillRef.current
+      ?.querySelectorAll<HTMLElement>(".sf-basket-fruit")
+      .forEach((fruitEl, i) => {
+        const rest = parseDeg(fruitEl.dataset.restRot ?? "0");
+        const jx = parsePx(fruitEl.dataset.jx ?? "4");
+        const jy = parsePx(fruitEl.dataset.jy ?? "-4");
+        const jr = parseDeg(fruitEl.dataset.jr ?? "6");
+        const fromRot = currentRotationDeg(fruitEl);
+        fruitEl.getAnimations().forEach((a) => a.cancel());
+        fruitEl.style.transform = `rotate(${fromRot}deg)`;
+
+        const sign = wiggleSign.current * (i % 2 === 0 ? 1 : -1);
+        fruitEl
+          .animate(
+            [
+              { transform: `rotate(${fromRot}deg)` },
+              {
+                transform: `translate(${jx * sign}px, ${jy}px) rotate(${rest + jr * sign}deg)`,
+                offset: 0.28,
+              },
+              {
+                transform: `translate(${-jx * sign * 0.7}px, ${jy * 0.35}px) rotate(${rest - jr * sign * 0.8}deg)`,
+                offset: 0.55,
+              },
+              { transform: `rotate(${rest}deg)` },
+            ],
+            {
+              duration: 500,
+              delay: i * 18,
+              easing: "ease-in-out",
+              fill: "forwards",
+            }
+          )
+          .finished.then(() => {
+            fruitEl.style.transform = "";
+          })
+          .catch(() => {});
+      });
   }, []);
+
+  const handleClick = useCallback(() => {
+    rustle();
+
+    tapCount.current += 1;
+    clearTimeout(tapTimer.current);
+
+    if (tapCount.current >= HOST_TAPS) {
+      tapCount.current = 0;
+      const next = pathname || "/stonefruit";
+      router.push(
+        authenticated ? "/admin" : `/host?next=${encodeURIComponent(next)}`
+      );
+      return;
+    }
+
+    tapTimer.current = setTimeout(() => {
+      tapCount.current = 0;
+    }, TAP_RESET_MS);
+  }, [authenticated, pathname, router, rustle]);
 
   return (
     <button
+      ref={basketRef}
       type="button"
-      className={`sf-basket${rustling ? " sf-basket--rustle" : ""}`}
+      className="sf-basket"
       aria-label="Picnic basket"
-      onClick={rustle}
-      onAnimationEnd={(e) => {
-        if (e.animationName === "sfBasketWiggle") setRustling(false);
-      }}
+      onClick={handleClick}
     >
       <Image
         src="/stonefruit/basket.png"
@@ -162,7 +279,7 @@ export function StonefruitBasket() {
         priority
         draggable={false}
       />
-      <span className="sf-basket-fill" aria-hidden>
+      <span ref={fillRef} className="sf-basket-fill" aria-hidden>
         {fruits.map((fruit) => (
           <Fruit key={fruit.src} fruit={fruit} />
         ))}

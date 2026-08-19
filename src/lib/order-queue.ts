@@ -90,9 +90,9 @@ export function statusColor(
   palette: "default" | "stonefruit" = "default"
 ): string {
   if (palette === "stonefruit") {
-    if (s === "pending") return "#3d6a72";
-    if (s === "in_progress") return "#2f8fad";
-    return "#2f7a4a";
+    if (s === "pending") return "#2f8fad";
+    if (s === "in_progress") return "#d4a017";
+    return "#4caf70";
   }
   if (s === "pending") return "#e94e89";
   if (s === "in_progress") return "#e09d28";

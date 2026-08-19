@@ -16,11 +16,11 @@ export function QueueToolbar({
   filter,
   counts,
   onFilterChange,
-  className = "mt-8 sm:mt-10",
+  className = "mt-8 sm:mt-10 py-3",
 }: QueueToolbarProps) {
   return (
     <div
-      className={`${className} flex flex-wrap items-center justify-between gap-x-4 gap-y-2 row-hairline py-3`}
+      className={`${className} flex flex-wrap items-center justify-between gap-x-4 gap-y-2`}
     >
       <div className="flex flex-wrap gap-x-4 gap-y-2 sm:gap-5 font-sans text-xs tracking-widest uppercase font-bold">
         {filterOptions.map((option) => {

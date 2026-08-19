@@ -27,7 +27,7 @@ const CONFIRM_MS = 3000;
 
 export function AdminPageContent({ initialSlug }: { initialSlug?: string }) {
   const router = useRouter();
-  const { authenticated } = useHostSession();
+  const { authenticated, logout } = useHostSession();
 
   const [popups, setPopups] = useState<Popup[]>([]);
   const [selectedSlug, setSelectedSlug] = useState(initialSlug ?? "");
@@ -357,10 +357,21 @@ export function AdminPageContent({ initialSlug }: { initialSlug?: string }) {
 
   return (
     <HostShell>
-      <h1 className="text-5xl sm:text-6xl">popups</h1>
-      <p className="mt-2 text-white/85">
-        Choose a popup to edit its menu. Mark one as the homepage.
-      </p>
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h1 className="text-5xl sm:text-6xl">popups</h1>
+          <p className="mt-2 text-white/85">
+            Choose a popup to edit its menu. Mark one as the homepage.
+          </p>
+        </div>
+        <button
+          type="button"
+          className="sf-btn-ghost shrink-0"
+          onClick={() => logout()}
+        >
+          host logout
+        </button>
+      </div>
 
       <div className="mt-6 flex flex-wrap gap-2">
         {popups.map((popup) => (
@@ -416,10 +427,10 @@ export function AdminPageContent({ initialSlug }: { initialSlug?: string }) {
               : ""
         }`}
       >
-      <div className="flex flex-wrap items-center justify-between gap-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between">
         <div>
           {selected && (
-            <p className="font-sans text-xs tracking-widest uppercase font-bold opacity-70 mb-1">
+            <p className="mb-1 font-sans text-xs font-bold uppercase tracking-widest opacity-70">
               {selected.name}
             </p>
           )}
@@ -431,7 +442,7 @@ export function AdminPageContent({ initialSlug }: { initialSlug?: string }) {
         </div>
         <button
           type="button"
-          className="sf-btn-primary"
+          className="sf-btn-primary w-full sm:w-auto"
           onClick={startAdd}
           disabled={!selectedSlug}
         >

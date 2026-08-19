@@ -1,11 +1,11 @@
 import Image from "next/image";
 import Link from "next/link";
-import { customerPath, ordersPath } from "@/lib/popups";
-import { HostFooterLink } from "@/components/HostFooterLink";
+import { customerPath } from "@/lib/popups";
 import { MadeWithLoveLink } from "@/components/MadeWithLoveLink";
 import type { PopupLayoutProps } from "../types";
 import { lazydog, petitCochon, nunito } from "./load-fonts";
 import { StonefruitBasket } from "./StonefruitBasket";
+import { StonefruitNavPill } from "./StonefruitNavPill";
 import { StonefruitSkyFit } from "./StonefruitSkyFit";
 import "./stonefruit-ui.css";
 
@@ -34,9 +34,7 @@ export function StonefruitLayout({ slug, isHome, children }: PopupLayoutProps) {
               />
             </span>
           </Link>
-          <Link href={ordersPath(slug, isHome)} className="sf-nav-pill mt-1">
-            queue
-          </Link>
+          <StonefruitNavPill slug={slug} isHome={isHome} />
         </header>
 
         <main className="mx-auto w-full max-w-lg md:max-w-2xl lg:max-w-[min(70%,56rem)] px-4 sm:px-5">
@@ -46,7 +44,6 @@ export function StonefruitLayout({ slug, isHome, children }: PopupLayoutProps) {
 
       <div className="sf-ground">
         <footer className="sf-ground-footer">
-          <HostFooterLink />
           <MadeWithLoveLink slug={slug} />
         </footer>
         <StonefruitBasket />

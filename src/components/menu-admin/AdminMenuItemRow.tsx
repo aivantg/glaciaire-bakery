@@ -34,47 +34,57 @@ export function AdminMenuItemRow({
 }: AdminMenuItemRowProps) {
   return (
     <li
-      className={`py-5 flex items-start sm:items-center justify-between gap-x-4 gap-y-3 ${
+      className={`py-5 sm:flex sm:items-center sm:justify-between sm:gap-4 ${
         dimmed || !item.available ? "opacity-50" : ""
       }`}
     >
-      {decoratorSrc ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={decoratorSrc}
-          alt=""
-          className="h-12 w-12 object-contain shrink-0"
-        />
-      ) : null}
-      <div className="min-w-0 flex-1">
-        <div className="flex items-baseline gap-2 flex-wrap">
-          <span className="font-sans font-extrabold text-lg text-ink-900 break-words">
-            {item.name}
-          </span>
-          <span className="font-sans text-xs tracking-widest uppercase font-bold text-ink-400">
-            {CATEGORY_LABEL[item.category]}
-          </span>
-          {!item.available && onToggleAvailable && (
-            <span className="font-sans text-xs tracking-widest uppercase font-bold text-ink-400">
-              sold out
-            </span>
+      <div className="flex min-w-0 flex-1 items-start gap-3">
+        {decoratorSrc ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={decoratorSrc}
+            alt=""
+            className="h-12 w-12 shrink-0 object-contain"
+          />
+        ) : null}
+        <div className="min-w-0 flex-1">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0 flex-1">
+              <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+                <span className="font-sans text-lg font-extrabold text-ink-900">
+                  {item.name}
+                </span>
+                <span className="font-sans text-xs font-bold uppercase tracking-widest text-ink-400">
+                  {CATEGORY_LABEL[item.category]}
+                </span>
+                {!item.available && onToggleAvailable && (
+                  <span className="font-sans text-xs font-bold uppercase tracking-widest text-ink-400">
+                    sold out
+                  </span>
+                )}
+              </div>
+            </div>
+            <div className="shrink-0 font-sans font-semibold tabular-nums text-ink-800">
+              ${formatPrice(item.price)}
+            </div>
+          </div>
+          {item.description && (
+            <p className="mt-1 font-sans text-sm text-ink-400">
+              {item.description}
+            </p>
           )}
-        </div>
-        {item.description && (
-          <p className="font-sans text-sm text-ink-400 mt-1">
-            {item.description}
+          <AdminAddonPreview addons={item.addons} />
+          <p className="mt-1 font-mono text-xs text-ink-400">
+            {formatUnitsOrdered(orderCount)}
           </p>
-        )}
-        <AdminAddonPreview addons={item.addons} />
-        <p className="font-mono text-xs text-ink-400 mt-1">
-          {formatUnitsOrdered(orderCount)}
-        </p>
-      </div>
-      <div className="font-sans font-semibold text-ink-800 shrink-0">
-        ${formatPrice(item.price)}
+        </div>
       </div>
       {(onToggleAvailable || onEdit || archiveAction) && (
-        <div className="flex items-center gap-4 sm:gap-5 shrink-0 ml-auto">
+        <div
+          className={`mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 sm:mt-0 sm:shrink-0 sm:pl-0 ${
+            decoratorSrc ? "pl-[3.75rem]" : ""
+          }`}
+        >
           {onToggleAvailable && (
             <button
               type="button"

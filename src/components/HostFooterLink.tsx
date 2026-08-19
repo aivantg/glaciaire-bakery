@@ -21,7 +21,7 @@ function showOnPath(pathname: string): boolean {
 
 export function HostFooterLink() {
   const pathname = usePathname();
-  const { authenticated, logout } = useHostSession();
+  const { authenticated } = useHostSession();
 
   if (!pathname || !showOnPath(pathname)) return null;
 
@@ -33,21 +33,12 @@ export function HostFooterLink() {
 
   if (authenticated) {
     return (
-      <div className="flex items-center justify-center gap-5">
-        <Link
-          href="/admin"
-          className="font-mono text-xs tracking-widest uppercase text-ink-400 hover:text-ink-900"
-        >
-          admin
-        </Link>
-        <button
-          type="button"
-          onClick={logout}
-          className="font-mono text-xs tracking-widest uppercase text-ink-400 hover:text-ink-900"
-        >
-          host logout
-        </button>
-      </div>
+      <Link
+        href="/admin"
+        className="font-mono text-xs tracking-widest uppercase text-ink-400 hover:text-ink-900"
+      >
+        admin
+      </Link>
     );
   }
 

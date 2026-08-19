@@ -50,7 +50,7 @@ export function StonefruitSkyFit() {
       const vh = window.innerHeight;
       const groundH = vw * GROUND_ASPECT;
       const cloudUnder = measureCloudUnder(stageH, groundH, vh);
-      // Always fill the viewport; ground flex-grows so meadow stays pinned to the bottom.
+      // Fill the viewport; extra height stays in the sky stage, not the meadow.
       const totalH = Math.max(vh, stageH - cloudUnder + groundH);
 
       lock = {
@@ -62,6 +62,10 @@ export function StonefruitSkyFit() {
 
       root.style.setProperty("--sf-fit-height", `${Math.ceil(totalH)}px`);
       root.style.setProperty("--sf-cloud-under", `${Math.round(cloudUnder)}px`);
+      root.style.setProperty(
+        "--sf-ground-pane",
+        `${Math.round(Math.max(0, groundH - cloudUnder))}px`
+      );
     }
 
     function absorbStageGrowth() {
@@ -78,6 +82,12 @@ export function StonefruitSkyFit() {
       );
 
       root.style.setProperty("--sf-cloud-under", `${Math.round(cloudUnder)}px`);
+      const vw = root.getBoundingClientRect().width || window.innerWidth;
+      const groundH = vw * GROUND_ASPECT;
+      root.style.setProperty(
+        "--sf-ground-pane",
+        `${Math.round(Math.max(0, groundH - cloudUnder))}px`
+      );
     }
 
     relock();
@@ -96,6 +106,7 @@ export function StonefruitSkyFit() {
       window.removeEventListener("resize", onResize);
       root.style.removeProperty("--sf-fit-height");
       root.style.removeProperty("--sf-cloud-under");
+      root.style.removeProperty("--sf-ground-pane");
     };
   }, []);
 

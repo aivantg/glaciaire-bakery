@@ -124,12 +124,38 @@
   }
 }
 
+.stonefruit-root:not(.stonefruit-root--ops):has(.sf-lockup) .sf-stage {
+  /* Mobile stays top-aligned; tall wide screens get vertical centering below. */
+  flex: 0 0 auto;
+}
+
+@media (min-width: 768px) and (min-height: 900px) {
+  .stonefruit-root:not(.stonefruit-root--ops):has(.sf-lockup) .sf-stage {
+    flex: 1 0 auto;
+    display: flex;
+    flex-direction: column;
+    min-height: calc(100dvh - var(--sf-ground-pane, 35vh));
+  }
+
+  .stonefruit-root:not(.stonefruit-root--ops):has(.sf-lockup) .sf-stage > main {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+
+  .stonefruit-root:has(.sf-lockup) .sf-lockup {
+    margin-top: 0;
+    padding-top: 0.25rem;
+  }
+}
+
 .stonefruit-root .sf-ground {
   position: relative;
   z-index: 0;
   width: 100%;
   margin-top: calc(-1 * var(--sf-cloud-under, 0px));
-  flex: 1 0 auto;
+  flex: 0 0 auto;
   min-height: calc(100vw * 840 / 1164);
   /* If the block grows taller than the art, meadow green continues below it. */
   background-color: #8ba85c;
@@ -510,57 +536,6 @@
   filter: drop-shadow(0 2px 3px rgba(40, 70, 40, 0.28));
 }
 
-.stonefruit-root .sf-basket--rustle {
-  animation: sfBasketWiggle 0.42s ease-in-out;
-}
-
-.stonefruit-root .sf-basket--rustle .sf-basket-fruit {
-  animation: sfFruitRustle 0.5s ease-in-out both;
-  animation-delay: var(--sf-delay, 0ms);
-}
-
-@keyframes sfBasketWiggle {
-  0%,
-  100% {
-    transform: rotate(0deg);
-  }
-  28% {
-    transform: rotate(-2.2deg);
-  }
-  58% {
-    transform: rotate(1.6deg);
-  }
-}
-
-@keyframes sfFruitRustle {
-  0%,
-  100% {
-    transform: rotate(var(--sf-rest-rot, 0deg));
-  }
-  22% {
-    transform: translate(var(--sf-jx, 4px), var(--sf-jy, -4px))
-      rotate(calc(var(--sf-rest-rot, 0deg) + var(--sf-jr, 6deg)));
-  }
-  48% {
-    transform: translate(calc(var(--sf-jx, 4px) * -1), calc(var(--sf-jy, -4px) * 0.4))
-      rotate(calc(var(--sf-rest-rot, 0deg) - var(--sf-jr, 6deg)));
-  }
-  72% {
-    transform: translate(
-        calc(var(--sf-jx, 4px) * 0.35),
-        calc(var(--sf-jy, -4px) * 0.25)
-      )
-      rotate(calc(var(--sf-rest-rot, 0deg) + calc(var(--sf-jr, 6deg) * 0.35)));
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .stonefruit-root .sf-basket--rustle,
-  .stonefruit-root .sf-basket--rustle .sf-basket-fruit {
-    animation: none;
-  }
-}
-
 .stonefruit-root .sf-footer-link {
   font-family: var(--font-lazydog), "Lazydog", system-ui, sans-serif !important;
   color: rgba(255, 255, 255, 0.82) !important;
@@ -573,6 +548,7 @@
 
 .stonefruit-root .sf-queue .sf-ops-panel {
   color: #3d6a72;
+  padding-top: 0.15rem;
 }
 
 .stonefruit-root .sf-queue .font-sans,

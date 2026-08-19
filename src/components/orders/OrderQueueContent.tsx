@@ -221,11 +221,11 @@ export function OrderQueueContent({
   const themed = slug === "stonefruit";
 
   return (
-    <div className={themed ? "sf-queue pt-4" : "pt-6"}>
+    <div className={themed ? "sf-queue pt-2" : "pt-6"}>
       <h1
         className={
           themed
-            ? "sf-display text-5xl sm:text-6xl text-center mb-6"
+            ? "sf-display text-5xl sm:text-6xl text-center mb-4"
             : "hero-stack text-5xl sm:text-7xl md:text-8xl mb-2"
         }
       >
@@ -238,7 +238,7 @@ export function OrderQueueContent({
         filter={filter}
         counts={counts}
         onFilterChange={setFilter}
-        className={themed ? "mt-0" : undefined}
+        className={themed ? "mt-0 pt-1 pb-2" : undefined}
       />
 
       {filter === "finished" && authenticated && (

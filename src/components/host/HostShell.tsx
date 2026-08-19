@@ -17,7 +17,7 @@ export function HostShell({
       className={`${lazydog.variable} ${petitCochon.variable} ${lazydog.className} stonefruit-root stonefruit-root--ops flex min-h-dvh flex-col`}
     >
       <header className="relative z-10 mx-auto flex w-full max-w-3xl items-center justify-between gap-3 px-5 pt-5 pb-2">
-        <Link href="/admin" className="flex flex-col items-start leading-none">
+        <Link href="/" className="flex flex-col items-start leading-none">
           <span className="sf-brand-word">GLACIAIRE</span>
           <span className="mt-1 flex items-center gap-1.5 pl-1">
             <span className="sf-lazy text-white text-sm">x</span>

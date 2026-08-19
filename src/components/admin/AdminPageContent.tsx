@@ -20,6 +20,7 @@ import { HostShell } from "@/components/host/HostShell";
 import { LoadingState } from "@/components/shared/LoadingState";
 import { ErrorState } from "@/components/shared/ErrorState";
 import { EmptyState } from "@/components/shared/EmptyState";
+import { petitCochon } from "@/popups/stonefruit/load-fonts";
 import "@/popups/passion/passion.css";
 
 const CONFIRM_MS = 3000;
@@ -393,7 +394,11 @@ export function AdminPageContent({ initialSlug }: { initialSlug?: string }) {
               {selected.name}
             </p>
           )}
-          <h2 className="sf-ops-menu-title text-4xl sm:text-5xl">menu</h2>
+          <h2
+            className={`${petitCochon.className} sf-ops-menu-title text-4xl sm:text-5xl`}
+          >
+            menu
+          </h2>
         </div>
         <button
           type="button"

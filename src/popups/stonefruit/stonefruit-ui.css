@@ -21,6 +21,8 @@
   --sf-soft: rgba(255, 255, 255, 0.78);
   --sf-card: rgba(255, 255, 255, 0.22);
   --sf-card-solid: rgba(255, 255, 255, 0.88);
+  --sf-card-shadow: 0 6px 18px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.04);
+  --sf-modal-shadow: 0 14px 40px rgba(0, 0, 0, 0.22), 0 2px 8px rgba(0, 0, 0, 0.1);
   --sf-border: rgba(255, 255, 255, 0.45);
   background-color: var(--sf-sky);
   color: var(--sf-white);
@@ -184,6 +186,7 @@
   border: 2px solid rgba(255, 255, 255, 0.95);
   border-radius: 1rem;
   padding: 0.55rem 0.95rem;
+  box-shadow: var(--sf-card-shadow);
 }
 
 .stonefruit-root .sf-ground-footer a,
@@ -199,11 +202,12 @@
 }
 
 .stonefruit-root .sf-ops-panel {
-  background: rgba(255, 255, 255, 0.9);
+  background: rgba(255, 255, 255, 0.94);
   border: 2px solid rgba(255, 255, 255, 0.95);
   border-radius: 1.25rem;
   padding: 1.25rem 1.1rem;
   color: #3d6a72;
+  box-shadow: var(--sf-card-shadow);
 }
 
 .stonefruit-root .sf-ops-panel .sf-btn-primary {
@@ -407,6 +411,7 @@
   background: #fff;
   color: #3d6a72;
   cursor: pointer;
+  box-shadow: var(--sf-card-shadow);
 }
 
 .stonefruit-root .sf-btn-primary:disabled {
@@ -446,7 +451,7 @@
   max-width: 24rem;
   padding: 1.5rem 1.25rem;
   color: #3d6a72;
-  box-shadow: 0 18px 50px -12px rgba(40, 80, 90, 0.35);
+  box-shadow: var(--sf-modal-shadow);
 }
 
 .stonefruit-root .sf-modal-card .sf-display {

@@ -66,11 +66,16 @@ const STONEFRUIT_ITEMS = [
   },
 ];
 
-async function upsertPopup(slug: string, name: string, isActive: boolean) {
+async function upsertPopup(
+  slug: string,
+  name: string,
+  isActive: boolean,
+  loveItems: string
+) {
   return prisma.popup.upsert({
     where: { slug },
-    create: { id: slug, slug, name, isActive },
-    update: { name },
+    create: { id: slug, slug, name, isActive, loveItems },
+    update: { name, loveItems },
   });
 }
 
@@ -136,8 +141,18 @@ async function seedItems(
 }
 
 async function main() {
-  const passion = await upsertPopup("passion", "Passion", true);
-  const stonefruit = await upsertPopup("stonefruit", "Stonefruit", false);
+  const passion = await upsertPopup(
+    "passion",
+    "Passion",
+    true,
+    "cookies, matcha, passionfruit, cruffins"
+  );
+  const stonefruit = await upsertPopup(
+    "stonefruit",
+    "Stonefruit",
+    false,
+    "cookies, peaches, mango, lychees"
+  );
 
   const anyActive = await prisma.popup.count({ where: { isActive: true } });
   if (anyActive === 0) {

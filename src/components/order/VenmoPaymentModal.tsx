@@ -1,7 +1,6 @@
 "use client";
 
 import Image from "next/image";
-import venmoQr from "@/app/venmo.png";
 import { formatPrice } from "@/lib/format";
 import { ModalShell } from "@/components/shared/ModalShell";
 
@@ -40,7 +39,7 @@ export function VenmoPaymentModal({
       <div className="mt-5 flex justify-center">
         <div className="bg-white p-3 rounded-2xl border-2 border-ink-900">
           <Image
-            src={venmoQr}
+            src="/venmo.png"
             alt="Venmo QR code"
             width={208}
             height={208}

@@ -4,16 +4,16 @@ import { customerPath, ordersPath } from "@/lib/popups";
 import { HostFooterLink } from "@/components/HostFooterLink";
 import { MadeWithLoveLink } from "@/components/MadeWithLoveLink";
 import type { PopupLayoutProps } from "../types";
-import { lazydog, petitCochon } from "./load-fonts";
+import { lazydog, petitCochon, nunito } from "./load-fonts";
 import { StonefruitBasket } from "./StonefruitBasket";
 import "./stonefruit-ui.css";
 
 export function StonefruitLayout({ slug, isHome, children }: PopupLayoutProps) {
   return (
     <div
-      className={`${lazydog.variable} ${petitCochon.variable} ${lazydog.className} stonefruit-root flex min-h-dvh flex-col`}
+      className={`${lazydog.variable} ${petitCochon.variable} ${nunito.variable} ${lazydog.className} stonefruit-root flex min-h-dvh flex-col`}
     >
-      <header className="relative z-10 mx-auto flex w-full max-w-lg items-start justify-between gap-3 px-4 pt-4 sm:px-5 sm:pt-5">
+      <header className="relative z-10 mx-auto flex w-full max-w-lg md:max-w-2xl lg:max-w-[min(70%,56rem)] items-start justify-between gap-3 px-4 pt-4 sm:px-5 sm:pt-5">
         <Link
           href={customerPath(slug, isHome)}
           className="flex flex-col items-start leading-none"
@@ -36,16 +36,15 @@ export function StonefruitLayout({ slug, isHome, children }: PopupLayoutProps) {
         </Link>
       </header>
 
-      <main className="relative z-10 mx-auto w-full max-w-lg flex-1 px-4 pb-4 sm:px-5">
+      <main className="relative z-10 mx-auto w-full max-w-lg md:max-w-2xl lg:max-w-[min(70%,56rem)] flex-1 px-4 pb-4 sm:px-5">
         {children}
       </main>
 
-      <footer className="relative z-10 flex flex-col items-center gap-2 px-4 pb-3 pt-2">
-        <HostFooterLink />
-        <MadeWithLoveLink />
-      </footer>
-
       <div className="sf-ground">
+        <footer className="sf-ground-footer">
+          <HostFooterLink />
+          <MadeWithLoveLink slug={slug} />
+        </footer>
         <StonefruitBasket />
       </div>
     </div>

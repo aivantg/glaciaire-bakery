@@ -37,15 +37,15 @@ export function StonefruitOrderPage({ slug, ordersPath }: PopupOrderPageProps) {
         </p>
       ) : (
         <form onSubmit={page.goToReview} className="mt-6">
-          <ul className="sf-menu-list">
-            {page.menuItems.map((item) => {
-              const qty = page.totalQtyForMenuItem(item.id);
-              const addonIds = page.getAddonIdsForItem(item.id);
-              const addons = availableAddons(item);
-              return (
-                <li key={item.id}>
-                  <div className="sf-menu-row">
-                    <div className="flex shrink-0 items-center">
+          <div className="sf-ops-panel">
+            <ul className="sf-menu-list">
+              {page.menuItems.map((item) => {
+                const qty = page.totalQtyForMenuItem(item.id);
+                const addonIds = page.getAddonIdsForItem(item.id);
+                const addons = availableAddons(item);
+                return (
+                  <li key={item.id}>
+                    <div className="sf-menu-row">
                       {item.decorator ? (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img
@@ -54,65 +54,73 @@ export function StonefruitOrderPage({ slug, ordersPath }: PopupOrderPageProps) {
                           className="sf-fruit-icon"
                         />
                       ) : null}
-                    </div>
-                    <div className="sf-item-copy">
-                      <div className="sf-item-name">{item.name}</div>
-                      <div className="sf-item-meta">
-                        ${formatPrice(item.price)}
-                        {item.description ? ` · ${item.description}` : ""}
+                      <div className="sf-item-main">
+                        <div className="sf-item-top">
+                          <div className="sf-item-copy">
+                            <div className="sf-item-name">{item.name}</div>
+                            {item.description ? (
+                              <div className="sf-item-desc">
+                                {item.description}
+                              </div>
+                            ) : null}
+                          </div>
+                          <div className="sf-item-actions">
+                            <div className="sf-item-price">
+                              ${formatPrice(item.price)}
+                            </div>
+                            <button
+                              type="button"
+                              className="sf-counter-btn"
+                              onClick={() => page.removeMostRecent(item)}
+                              disabled={qty === 0}
+                              aria-label={`Remove ${item.name}`}
+                            >
+                              −
+                            </button>
+                            <span className="sf-qty">{qty}</span>
+                            <button
+                              type="button"
+                              className="sf-counter-btn"
+                              onClick={() => page.addOne(item, addonIds)}
+                              aria-label={`Add ${item.name}`}
+                            >
+                              +
+                            </button>
+                          </div>
+                        </div>
+                        {addons.length > 0 && (
+                          <div className="sf-item-addons">
+                            {addons.map((addon) => {
+                              const selected = addonIds.includes(addon.id);
+                              const price = formatAddonPrice(addon.price);
+                              return (
+                                <button
+                                  key={addon.id}
+                                  type="button"
+                                  className="sf-addon-chip"
+                                  aria-pressed={selected}
+                                  onClick={() =>
+                                    page.toggleAddonSelection(item.id, addon.id)
+                                  }
+                                >
+                                  {addon.name}
+                                  {price ? ` ${price}` : ""}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        )}
                       </div>
                     </div>
-                    <div className="flex shrink-0 items-center gap-1">
-                      <button
-                        type="button"
-                        className="sf-counter-btn"
-                        onClick={() => page.removeMostRecent(item)}
-                        disabled={qty === 0}
-                        aria-label={`Remove ${item.name}`}
-                      >
-                        −
-                      </button>
-                      <span className="sf-qty">{qty}</span>
-                      <button
-                        type="button"
-                        className="sf-counter-btn"
-                        onClick={() => page.addOne(item, addonIds)}
-                        aria-label={`Add ${item.name}`}
-                      >
-                        +
-                      </button>
-                    </div>
-                  </div>
-                  {addons.length > 0 && (
-                    <div className="mt-2 ml-14 flex flex-wrap gap-2">
-                      {addons.map((addon) => {
-                        const selected = addonIds.includes(addon.id);
-                        const price = formatAddonPrice(addon.price);
-                        return (
-                          <button
-                            key={addon.id}
-                            type="button"
-                            className="sf-addon-chip"
-                            aria-pressed={selected}
-                            onClick={() =>
-                              page.toggleAddonSelection(item.id, addon.id)
-                            }
-                          >
-                            {addon.name}
-                            {price ? ` ${price}` : ""}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  )}
-                </li>
-              );
-            })}
-          </ul>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
 
           {page.totalCount > 0 && (
-            <div className="mt-8">
-              <label className="block text-center text-sm tracking-wide uppercase text-white/80">
+            <div className="sf-ops-panel sf-name-panel mt-6">
+              <label className="block text-center text-sm tracking-wide uppercase">
                 your name
                 <input
                   type="text"
@@ -126,7 +134,7 @@ export function StonefruitOrderPage({ slug, ordersPath }: PopupOrderPageProps) {
           )}
 
           {page.submitError && (
-            <p className="mt-4 text-center text-red-100">{page.submitError}</p>
+            <p className="mt-4 text-center text-red-700">{page.submitError}</p>
           )}
 
           <div className="mt-8 flex flex-col items-center gap-3">
@@ -154,7 +162,7 @@ export function StonefruitOrderPage({ slug, ordersPath }: PopupOrderPageProps) {
             <h2 id="sf-review-title" className="sf-display text-center text-4xl">
               review order
             </h2>
-            <p className="mt-2 text-center text-white/85">
+            <p className="mt-2 text-center sf-modal-kicker">
               for {page.trimmedName}
             </p>
             <ul className="sf-modal-divider mt-4">
@@ -182,7 +190,7 @@ export function StonefruitOrderPage({ slug, ordersPath }: PopupOrderPageProps) {
               <span>${formatPrice(page.total)}</span>
             </p>
             {page.submitError && (
-              <p className="mt-3 text-center text-red-100">{page.submitError}</p>
+              <p className="mt-3 text-center text-red-700">{page.submitError}</p>
             )}
             <div className="mt-5 flex flex-col items-center gap-2">
               <button
@@ -223,7 +231,17 @@ export function StonefruitOrderPage({ slug, ordersPath }: PopupOrderPageProps) {
             <p className="mt-3">
               order placed. total ${formatPrice(page.venmoAmount)}.
             </p>
-            <p className="mt-2 text-white/80">
+            <div className="sf-venmo-qr">
+              <Image
+                src="/venmo.png"
+                alt="Venmo QR code"
+                width={220}
+                height={280}
+                className="mx-auto h-auto w-[11.5rem]"
+                priority
+              />
+            </div>
+            <p className="mt-2 sf-modal-kicker">
               venmo the host, then view the queue.
             </p>
             <button

@@ -10,7 +10,7 @@ export function PassionLayout({ slug, isHome, children }: PopupLayoutProps) {
       <main className="flex-1 w-full max-w-5xl mx-auto px-4 sm:px-6 pb-12">
         {children}
       </main>
-      <SiteFooter />
+      <SiteFooter slug={slug} />
     </div>
   );
 }

@@ -8,6 +8,7 @@ type QueueToolbarProps = {
   filter: QueueFilter;
   counts: Record<QueueFilter, number>;
   onFilterChange: (filter: QueueFilter) => void;
+  className?: string;
 };
 
 export function QueueToolbar({
@@ -15,9 +16,12 @@ export function QueueToolbar({
   filter,
   counts,
   onFilterChange,
+  className = "mt-8 sm:mt-10",
 }: QueueToolbarProps) {
   return (
-    <div className="mt-8 sm:mt-10 flex flex-wrap items-center justify-between gap-x-4 gap-y-2 row-hairline py-3">
+    <div
+      className={`${className} flex flex-wrap items-center justify-between gap-x-4 gap-y-2 row-hairline py-3`}
+    >
       <div className="flex flex-wrap gap-x-4 gap-y-2 sm:gap-5 font-sans text-xs tracking-widest uppercase font-bold">
         {filterOptions.map((option) => {
           const active = filter === option;

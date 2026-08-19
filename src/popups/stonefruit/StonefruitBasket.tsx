@@ -10,7 +10,6 @@ import {
 } from "react";
 
 type FruitSlot = {
-  layer: "back" | "front";
   left: string;
   top: string;
   width: string;
@@ -37,47 +36,32 @@ const DECORATOR_FILES = [
 
 const SLOTS: FruitSlot[] = [
   {
-    layer: "back",
-    left: "22%",
-    top: "24%",
-    width: "46%",
-    z: 1,
-    rot: "-14deg",
+    left: "14%",
+    top: "10%",
+    width: "42%",
+    z: 4,
+    rot: "-12deg",
     delay: "0ms",
     jx: "4px",
     jy: "-5px",
     jr: "-7deg",
   },
   {
-    layer: "back",
-    left: "6%",
-    top: "28%",
-    width: "48%",
-    z: 2,
-    rot: "-8deg",
+    left: "34%",
+    top: "8%",
+    width: "46%",
+    z: 5,
+    rot: "8deg",
     delay: "30ms",
     jx: "-5px",
     jy: "-3px",
     jr: "6deg",
   },
   {
-    layer: "front",
-    left: "34%",
-    top: "18%",
+    left: "20%",
+    top: "30%",
     width: "50%",
-    z: 4,
-    rot: "10deg",
-    delay: "50ms",
-    jx: "5px",
-    jy: "-6px",
-    jr: "8deg",
-  },
-  {
-    layer: "front",
-    left: "18%",
-    top: "32%",
-    width: "52%",
-    z: 5,
+    z: 6,
     rot: "4deg",
     delay: "20ms",
     jx: "-4px",
@@ -85,13 +69,12 @@ const SLOTS: FruitSlot[] = [
     jr: "-5deg",
   },
   {
-    layer: "front",
-    left: "54%",
-    top: "14%",
-    width: "30%",
-    z: 6,
-    rot: "16deg",
-    delay: "70ms",
+    left: "50%",
+    top: "16%",
+    width: "34%",
+    z: 7,
+    rot: "14deg",
+    delay: "50ms",
     jx: "3px",
     jy: "-7px",
     jr: "10deg",
@@ -173,13 +156,6 @@ export function StonefruitBasket() {
         if (e.animationName === "sfBasketWiggle") setRustling(false);
       }}
     >
-      <span className="sf-basket-fill sf-basket-fill--back" aria-hidden>
-        {fruits
-          .filter((fruit) => fruit.layer === "back")
-          .map((fruit) => (
-            <Fruit key={fruit.src} fruit={fruit} />
-          ))}
-      </span>
       <Image
         src="/stonefruit/basket.png"
         alt=""
@@ -189,12 +165,10 @@ export function StonefruitBasket() {
         priority
         draggable={false}
       />
-      <span className="sf-basket-fill sf-basket-fill--front" aria-hidden>
-        {fruits
-          .filter((fruit) => fruit.layer === "front")
-          .map((fruit) => (
-            <Fruit key={fruit.src} fruit={fruit} />
-          ))}
+      <span className="sf-basket-fill" aria-hidden>
+        {fruits.map((fruit) => (
+          <Fruit key={fruit.src} fruit={fruit} />
+        ))}
       </span>
     </button>
   );

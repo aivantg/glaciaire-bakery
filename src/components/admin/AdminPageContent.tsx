@@ -32,6 +32,8 @@ export function AdminPageContent({ initialSlug }: { initialSlug?: string }) {
   const [popups, setPopups] = useState<Popup[]>([]);
   const [selectedSlug, setSelectedSlug] = useState(initialSlug ?? "");
   const [settingActive, setSettingActive] = useState(false);
+  const [loveItemsDraft, setLoveItemsDraft] = useState("");
+  const [savingLoveItems, setSavingLoveItems] = useState(false);
 
   const [items, setItems] = useState<MenuItem[]>([]);
   const [archivedItems, setArchivedItems] = useState<MenuItem[]>([]);
@@ -124,6 +126,11 @@ export function AdminPageContent({ initialSlug }: { initialSlug?: string }) {
     setFormError(null);
     fetchItems(selectedSlug);
   }, [authenticated, selectedSlug, fetchItems]);
+
+  useEffect(() => {
+    const selected = popups.find((p) => p.slug === selectedSlug);
+    setLoveItemsDraft(selected?.loveItems ?? "");
+  }, [popups, selectedSlug]);
 
   function startAdd() {
     setEditingId(null);
@@ -317,6 +324,27 @@ export function AdminPageContent({ initialSlug }: { initialSlug?: string }) {
     }
   }
 
+  async function saveLoveItems(slug: string) {
+    setSavingLoveItems(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/popups", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ slug, loveItems: loveItemsDraft }),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error ?? "Could not save");
+      }
+      await loadPopups();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Could not save");
+    } finally {
+      setSavingLoveItems(false);
+    }
+  }
+
   if (authenticated !== true) {
     return (
       <HostShell title="Admin">
@@ -460,6 +488,40 @@ export function AdminPageContent({ initialSlug }: { initialSlug?: string }) {
         />
       )}
       </div>
+
+      {selected && (
+        <div
+          className={`sf-ops-panel mt-8 ${
+            selectedSlug === "stonefruit"
+              ? "sf-ops-panel--stonefruit"
+              : selectedSlug === "passion"
+                ? "sf-ops-panel--passion"
+                : ""
+          }`}
+        >
+          <label className="block font-sans text-sm">
+            made with love and …
+            <input
+              type="text"
+              className="mt-1 w-full rounded-lg border border-white/70 bg-white/80 px-3 py-2 text-sm text-ink-800 outline-none"
+              value={loveItemsDraft}
+              onChange={(e) => setLoveItemsDraft(e.target.value)}
+              placeholder="cookies, fruit, pastry"
+            />
+          </label>
+          <p className="mt-1 font-sans text-xs opacity-70">
+            comma-separated; one is picked at random in the footer
+          </p>
+          <button
+            type="button"
+            className="sf-btn-primary mt-3 px-3 py-1"
+            onClick={() => saveLoveItems(selected.slug)}
+            disabled={savingLoveItems}
+          >
+            {savingLoveItems ? "Saving…" : "Save footer line"}
+          </button>
+        </div>
+      )}
     </HostShell>
   );
 }

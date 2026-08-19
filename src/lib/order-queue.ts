@@ -29,6 +29,7 @@ export const FILTER_LABELS: Record<QueueFilter, string> = {
 
 export function isRecentlyFinished(order: Order, now: number): boolean {
   return (
+    !order.archived &&
     order.status === "done" &&
     now - new Date(order.updatedAt).getTime() < RECENTLY_FINISHED_MS
   );
@@ -57,24 +58,31 @@ export function matchesFilter(
   return isFinishedOrder(order);
 }
 
-/** Kitchen rail: making now, then just-handed-off, then next tickets, then pickup. */
-function orderSortRank(order: Order, now: number): number {
-  if (order.archived) return 5;
-  if (order.status === "in_progress") return 1;
-  if (isRecentlyFinished(order, now)) return 2;
-  if (order.status === "pending") return 3;
-  return 4;
+export function orderItemCount(order: Order): number {
+  return order.items.reduce((sum, item) => sum + item.quantity, 0);
 }
 
-export function sortOrders(orders: Order[], now: number = Date.now()): Order[] {
+/** Kitchen rail: making now, then next tickets, then pickup. */
+function orderSortRank(order: Order): number {
+  if (order.archived) return 4;
+  if (order.status === "in_progress") return 1;
+  if (order.status === "pending") return 2;
+  return 3;
+}
+
+export function sortOrders(orders: Order[]): Order[] {
   return [...orders].sort((a, b) => {
-    const rankDiff = orderSortRank(a, now) - orderSortRank(b, now);
+    const rankDiff = orderSortRank(a) - orderSortRank(b);
     if (rankDiff !== 0) return rankDiff;
-    if (isRecentlyFinished(a, now) && isRecentlyFinished(b, now)) {
-      return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
-    }
     return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
   });
+}
+
+export function sortReadyNewestFirst(orders: Order[]): Order[] {
+  return [...orders].sort(
+    (a, b) =>
+      new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+  );
 }
 
 export function statusColor(s: OrderStatus): string {

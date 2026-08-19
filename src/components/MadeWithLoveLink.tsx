@@ -1,19 +1,41 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { parseLoveItems } from "@/lib/love-items";
 
-const LOVE_ITEMS = ["cookies", "matcha", "passionfruit", "cruffins"] as const;
-
-function pickRandomItem() {
-  return LOVE_ITEMS[Math.floor(Math.random() * LOVE_ITEMS.length)];
+function pickRandomItem(items: string[]) {
+  return items[Math.floor(Math.random() * items.length)] ?? "cookies";
 }
 
-export function MadeWithLoveLink() {
-  const [item, setItem] = useState<(typeof LOVE_ITEMS)[number]>("cookies");
+export function MadeWithLoveLink({ slug }: { slug?: string }) {
+  const [item, setItem] = useState("cookies");
 
   useEffect(() => {
-    setItem(pickRandomItem());
-  }, []);
+    let cancelled = false;
+
+    async function load() {
+      if (!slug) {
+        setItem(pickRandomItem(parseLoveItems()));
+        return;
+      }
+      try {
+        const res = await fetch("/api/popups");
+        if (!res.ok) throw new Error("Failed to load popups");
+        const popups: { slug: string; loveItems?: string }[] = await res.json();
+        const popup = popups.find((p) => p.slug === slug);
+        if (!cancelled) {
+          setItem(pickRandomItem(parseLoveItems(popup?.loveItems)));
+        }
+      } catch {
+        if (!cancelled) setItem(pickRandomItem(parseLoveItems()));
+      }
+    }
+
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, [slug]);
 
   return (
     <a

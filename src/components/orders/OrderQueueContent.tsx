@@ -4,9 +4,11 @@ import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import type { Order } from "@/lib/store";
 import {
   isFinishedOrder,
+  isRecentlyFinished,
   isWorkingOnIt,
   matchesFilter,
   sortOrders,
+  sortReadyNewestFirst,
   STATUS_NEXT,
   type QueueFilter,
 } from "@/lib/order-queue";
@@ -16,6 +18,7 @@ import { popupApiBase } from "@/lib/popups";
 import { QueueToolbar } from "@/components/orders/QueueToolbar";
 import { QueueEmptyState } from "@/components/orders/QueueEmptyState";
 import { OrderQueueRow } from "@/components/orders/OrderQueueRow";
+import { ReadyCalloutRow } from "@/components/orders/ReadyCalloutRow";
 import { ArchiveAllOrdersModal } from "@/components/orders/ArchiveAllOrdersModal";
 import { LoadingState } from "@/components/shared/LoadingState";
 import { ErrorState } from "@/components/shared/ErrorState";
@@ -94,7 +97,7 @@ export function OrderQueueContent({
   }, [authenticated, fetchOrders]);
 
   useEffect(() => {
-    const interval = setInterval(() => setNow(Date.now()), 30000);
+    const interval = setInterval(() => setNow(Date.now()), 5000);
     return () => clearInterval(interval);
   }, []);
 
@@ -194,10 +197,26 @@ export function OrderQueueContent({
     };
   }, [orders, now]);
 
-  const filteredOrders = useMemo(
-    () => sortOrders(orders.filter((o) => matchesFilter(o, filter, now)), now),
+  const recentlyReady = useMemo(
+    () =>
+      filter === "working_on_it"
+        ? sortReadyNewestFirst(
+            orders.filter((o) => isRecentlyFinished(o, now))
+          )
+        : [],
     [orders, filter, now]
   );
+
+  const filteredOrders = useMemo(() => {
+    if (filter === "finished") {
+      return sortReadyNewestFirst(orders.filter((o) => isFinishedOrder(o)));
+    }
+    const visible = orders.filter((o) => matchesFilter(o, filter, now));
+    if (filter === "working_on_it") {
+      return sortOrders(visible.filter((o) => !isRecentlyFinished(o, now)));
+    }
+    return sortOrders(visible);
+  }, [orders, filter, now]);
 
   const themed = slug === "stonefruit";
 
@@ -213,11 +232,13 @@ export function OrderQueueContent({
         the queue
       </h1>
 
+      <div className={themed ? "sf-ops-panel" : undefined}>
       <QueueToolbar
         filterOptions={filterOptions}
         filter={filter}
         counts={counts}
         onFilterChange={setFilter}
+        className={themed ? "mt-0" : undefined}
       />
 
       {filter === "finished" && authenticated && (
@@ -237,26 +258,11 @@ export function OrderQueueContent({
         </div>
       )}
 
-      {showArchiveAllModal && (
-        <ArchiveAllOrdersModal
-          finishedCount={counts.finished}
-          archiving={archivingAll}
-          error={archiveAllError}
-          onConfirm={archiveAllFinished}
-          onCancel={() => {
-            if (!archivingAll) {
-              setShowArchiveAllModal(false);
-              setArchiveAllError(null);
-            }
-          }}
-        />
-      )}
-
       {loading ? (
         <LoadingState message="loading orders…" />
       ) : error ? (
         <ErrorState message={error} />
-      ) : filteredOrders.length === 0 ? (
+      ) : recentlyReady.length === 0 && filteredOrders.length === 0 ? (
         <QueueEmptyState
           filter={filter}
           hasAnyOrders={orders.length > 0}
@@ -264,6 +270,13 @@ export function OrderQueueContent({
         />
       ) : (
         <ul className="list-hairline">
+          {recentlyReady.map((order) => (
+            <ReadyCalloutRow
+              key={order.id}
+              order={order}
+              orderNumber={orderNumbers[order.id]}
+            />
+          ))}
           {filteredOrders.map((order) => (
             <OrderQueueRow
               key={order.id}
@@ -279,6 +292,22 @@ export function OrderQueueContent({
             />
           ))}
         </ul>
+      )}
+      </div>
+
+      {showArchiveAllModal && (
+        <ArchiveAllOrdersModal
+          finishedCount={counts.finished}
+          archiving={archivingAll}
+          error={archiveAllError}
+          onConfirm={archiveAllFinished}
+          onCancel={() => {
+            if (!archivingAll) {
+              setShowArchiveAllModal(false);
+              setArchiveAllError(null);
+            }
+          }}
+        />
       )}
     </div>
   );

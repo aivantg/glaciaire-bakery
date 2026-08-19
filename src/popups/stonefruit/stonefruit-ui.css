@@ -78,16 +78,58 @@
   flex-shrink: 0;
 }
 
+.stonefruit-root .sf-ground-footer {
+  position: absolute;
+  left: 50%;
+  bottom: 1rem;
+  transform: translateX(-50%);
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 0.15rem;
+  background: rgba(255, 255, 255, 0.9);
+  border: 2px solid rgba(255, 255, 255, 0.95);
+  border-radius: 1rem;
+  padding: 0.55rem 0.95rem;
+}
+
+.stonefruit-root .sf-ground-footer a,
+.stonefruit-root .sf-ground-footer button,
+.stonefruit-root .sf-ground-footer span {
+  font-family: var(--font-lazydog), "Lazydog", system-ui, sans-serif !important;
+  color: #3d6a72 !important;
+}
+
+.stonefruit-root .sf-ground-footer a:hover,
+.stonefruit-root .sf-ground-footer button:hover {
+  color: #2a4d53 !important;
+}
+
+.stonefruit-root .sf-ops-panel {
+  background: rgba(255, 255, 255, 0.9);
+  border: 2px solid rgba(255, 255, 255, 0.95);
+  border-radius: 1.25rem;
+  padding: 1.25rem 1.1rem;
+  color: #3d6a72;
+}
+
 .stonefruit-root .sf-menu-list {
   display: flex;
   flex-direction: column;
-  gap: 0.7rem;
-  margin-top: 0.25rem;
+  margin: 0;
+}
+
+.stonefruit-root .sf-menu-list > * + * {
+  border-top: 1px solid rgba(61, 106, 114, 0.14);
+  margin-top: 0.85rem;
+  padding-top: 0.85rem;
 }
 
 .stonefruit-root .sf-menu-row {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 0.7rem;
 }
 
@@ -111,52 +153,91 @@
   height: 2rem;
 }
 
-.stonefruit-root .sf-item-copy {
+.stonefruit-root .sf-item-main {
   min-width: 0;
   flex: 1;
 }
 
-.stonefruit-root .sf-item-name {
-  font-family: var(--font-lazydog), "Lazydog", system-ui, sans-serif;
-  font-size: clamp(0.95rem, 3.4vw, 1.22rem);
-  letter-spacing: 0.03em;
-  text-transform: uppercase;
-  color: #fff;
-  text-shadow: 0 1px 2px rgba(70, 110, 120, 0.35);
+.stonefruit-root .sf-item-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
 }
 
-.stonefruit-root .sf-item-meta {
-  font-size: 0.92rem;
-  color: rgba(255, 255, 255, 0.82);
-  margin-top: 0.1rem;
+.stonefruit-root .sf-item-copy {
+  min-width: 0;
+  flex: 1 1 70%;
+  max-width: 70%;
+}
+
+.stonefruit-root .sf-item-name {
+  font-family: var(--font-lazydog), "Lazydog", system-ui, sans-serif;
+  font-size: 1.125rem;
+  font-weight: 800;
+  color: #3d6a72;
+  line-height: 1.15;
+}
+
+.stonefruit-root .sf-item-desc {
+  font-family: var(--font-nunito), Nunito, system-ui, sans-serif;
+  font-size: 0.875rem;
+  font-weight: 400;
+  color: rgba(61, 106, 114, 0.7);
+  margin-top: 0.2rem;
+  line-height: 1.35;
+  letter-spacing: -0.01em;
+}
+
+.stonefruit-root .sf-item-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex-shrink: 0;
+}
+
+.stonefruit-root .sf-item-price {
+  font-family: var(--font-lazydog), "Lazydog", system-ui, sans-serif;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #3d6a72;
+  line-height: 1;
+  margin-right: 0.15rem;
+}
+
+.stonefruit-root .sf-item-addons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-top: 0.55rem;
 }
 
 .stonefruit-root .sf-addon-chip {
-  font-family: "Lazydog", system-ui, sans-serif;
-  font-size: 0.88rem;
+  font-family: var(--font-lazydog), "Lazydog", system-ui, sans-serif;
+  font-size: 0.85rem;
   padding: 0.28rem 0.75rem;
   border-radius: 9999px;
-  border: 1.5px solid rgba(255, 255, 255, 0.7);
-  background: rgba(255, 255, 255, 0.12);
-  color: #fff;
+  border: 1.5px solid rgba(61, 106, 114, 0.4);
+  background: transparent;
+  color: #3d6a72;
   cursor: pointer;
 }
 
 .stonefruit-root .sf-addon-chip[aria-pressed="true"] {
-  background: #fff;
-  color: #3d6a72;
-  border-color: #fff;
+  background: #3d6a72;
+  color: #fff;
+  border-color: #3d6a72;
 }
 
 .stonefruit-root .sf-counter-btn {
-  font-family: "Lazydog", system-ui, sans-serif;
-  width: 2rem;
-  height: 2rem;
+  font-family: var(--font-lazydog), "Lazydog", system-ui, sans-serif;
+  width: 1.35rem;
+  height: 1.35rem;
   border-radius: 9999px;
-  border: 2px solid #fff;
+  border: 1.5px solid #3d6a72;
   background: transparent;
-  color: #fff;
-  font-size: 1.2rem;
+  color: #3d6a72;
+  font-size: 0.9rem;
   line-height: 1;
   cursor: pointer;
   display: inline-flex;
@@ -170,17 +251,23 @@
 }
 
 .stonefruit-root .sf-qty {
-  min-width: 1.25rem;
+  min-width: 0.95rem;
+  font-size: 0.85rem;
   text-align: center;
+  color: #3d6a72;
+}
+
+.stonefruit-root .sf-name-panel {
+  padding: 0.9rem 1.1rem 1.05rem;
 }
 
 .stonefruit-root .sf-name-input {
   width: 100%;
   background: transparent;
   border: 0;
-  border-bottom: 2px solid rgba(255, 255, 255, 0.55);
-  color: #fff;
-  font-family: "Lazydog", system-ui, sans-serif;
+  border-bottom: 2px solid rgba(61, 106, 114, 0.35);
+  color: #3d6a72;
+  font-family: var(--font-lazydog), "Lazydog", system-ui, sans-serif;
   font-size: 1.2rem;
   text-align: center;
   padding: 0.45rem 0;
@@ -188,7 +275,7 @@
 }
 
 .stonefruit-root .sf-name-input::placeholder {
-  color: rgba(255, 255, 255, 0.5);
+  color: rgba(61, 106, 114, 0.4);
 }
 
 .stonefruit-root .sf-btn-primary {
@@ -232,23 +319,43 @@
 }
 
 .stonefruit-root .sf-modal-card {
-  background: var(--sf-sky);
-  background-image: linear-gradient(
-    180deg,
-    rgba(186, 228, 232, 0.96),
-    rgba(186, 228, 232, 0.92)
-  );
-  border: 2px solid #fff;
+  background: rgba(255, 255, 255, 0.94);
+  border: 2px solid rgba(255, 255, 255, 0.95);
   border-radius: 1.5rem;
   width: 100%;
   max-width: 24rem;
   padding: 1.5rem 1.25rem;
-  color: #fff;
+  color: #3d6a72;
   box-shadow: 0 18px 50px -12px rgba(40, 80, 90, 0.35);
 }
 
+.stonefruit-root .sf-modal-card .sf-display {
+  color: #3d6a72;
+}
+
+.stonefruit-root .sf-modal-kicker {
+  color: rgba(61, 106, 114, 0.7);
+}
+
 .stonefruit-root .sf-modal-divider > * + * {
-  border-top: 1px solid rgba(255, 255, 255, 0.28);
+  border-top: 1px solid rgba(61, 106, 114, 0.14);
+}
+
+.stonefruit-root .sf-modal-card .sf-btn-primary {
+  background: #3d6a72;
+  color: #fff;
+}
+
+.stonefruit-root .sf-modal-card .sf-btn-ghost {
+  color: #3d6a72;
+}
+
+.stonefruit-root .sf-venmo-qr {
+  margin: 1rem auto 0;
+  width: fit-content;
+  background: #fff;
+  border-radius: 1rem;
+  padding: 0.4rem;
 }
 
 .stonefruit-root .sf-basket {
@@ -280,13 +387,6 @@
   position: absolute;
   inset: 0;
   pointer-events: none;
-}
-
-.stonefruit-root .sf-basket-fill--back {
-  z-index: 1;
-}
-
-.stonefruit-root .sf-basket-fill--front {
   z-index: 4;
 }
 
@@ -350,26 +450,18 @@
   }
 }
 
-.stonefruit-root .sf-footer-link,
-.stonefruit-root footer a,
-.stonefruit-root footer button {
+.stonefruit-root .sf-footer-link {
   font-family: var(--font-lazydog), "Lazydog", system-ui, sans-serif !important;
   color: rgba(255, 255, 255, 0.82) !important;
 }
 
-.stonefruit-root footer a:hover,
-.stonefruit-root footer button:hover {
-  color: #fff !important;
-}
-
-/* ── Queue on the picnic sky ──────────────────────────────────────────────── */
+/* ── Queue: title on sky, tickets on the white card ───────────────────────── */
 .stonefruit-root .sf-queue {
   color: #fff;
 }
 
-.stonefruit-root .sf-queue .row-hairline,
-.stonefruit-root .sf-queue .list-hairline > * + * {
-  border-color: rgba(255, 255, 255, 0.32);
+.stonefruit-root .sf-queue .sf-ops-panel {
+  color: #3d6a72;
 }
 
 .stonefruit-root .sf-queue .font-sans,
@@ -380,49 +472,51 @@
   font-family: var(--font-lazydog), "Lazydog", system-ui, sans-serif;
 }
 
-.stonefruit-root .sf-queue .text-ink-900,
-.stonefruit-root .sf-queue .text-ink-800 {
-  color: #fff;
+.stonefruit-root .sf-queue .sf-ops-panel .row-hairline,
+.stonefruit-root .sf-queue .sf-ops-panel .list-hairline > * + * {
+  border-color: rgba(61, 106, 114, 0.14);
 }
 
-.stonefruit-root .sf-queue .order-queue-addons {
-  color: #fff;
+.stonefruit-root .sf-queue .sf-ops-panel .text-ink-900,
+.stonefruit-root .sf-queue .sf-ops-panel .text-ink-800,
+.stonefruit-root .sf-queue .sf-ops-panel .order-queue-addons {
+  color: #3d6a72;
 }
 
-.stonefruit-root .sf-queue .text-ink-700,
-.stonefruit-root .sf-queue .text-ink-500,
-.stonefruit-root .sf-queue .text-ink-400,
-.stonefruit-root .sf-queue .text-ink-300 {
-  color: rgba(255, 255, 255, 0.78);
+.stonefruit-root .sf-queue .sf-ops-panel .text-ink-700,
+.stonefruit-root .sf-queue .sf-ops-panel .text-ink-500,
+.stonefruit-root .sf-queue .sf-ops-panel .text-ink-400,
+.stonefruit-root .sf-queue .sf-ops-panel .text-ink-300 {
+  color: rgba(61, 106, 114, 0.7);
 }
 
-.stonefruit-root .sf-queue .text-leaf-700 {
-  color: #fff;
+.stonefruit-root .sf-queue .sf-ops-panel .text-leaf-700 {
+  color: #3d6a72;
 }
 
-.stonefruit-root .sf-queue .bg-leaf-500 {
-  background-color: #fff;
+.stonefruit-root .sf-queue .sf-ops-panel .bg-leaf-500 {
+  background-color: #3d6a72;
 }
 
-.stonefruit-root .sf-queue .link-mono {
-  color: #fff;
+.stonefruit-root .sf-queue .sf-ops-panel .link-mono {
+  color: #3d6a72;
 }
 
-.stonefruit-root .sf-queue .action-chip {
-  border-color: rgba(255, 255, 255, 0.65);
-  color: #fff;
+.stonefruit-root .sf-queue .sf-ops-panel .action-chip {
+  border-color: rgba(61, 106, 114, 0.45);
+  color: #3d6a72;
 }
 
-.stonefruit-root .sf-queue .action-chip:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.16);
-  border-color: #fff;
+.stonefruit-root .sf-queue .sf-ops-panel .action-chip:hover:not(:disabled) {
+  background: rgba(61, 106, 114, 0.08);
+  border-color: #3d6a72;
 }
 
-.stonefruit-root .sf-queue .sf-queue-empty-title {
+.stonefruit-root .sf-queue .sf-ops-panel .sf-queue-empty-title {
   font-family: var(--font-petit-cochon), "Petit Cochon", system-ui, sans-serif;
   font-weight: 400;
-  color: #fff;
-  text-shadow: 0 2px 0 rgba(70, 100, 110, 0.2);
+  color: #3d6a72;
+  text-shadow: none;
 }
 
 /* Admin / host chrome stays on the picnic sky */
@@ -441,14 +535,6 @@
 .stonefruit-root--ops header span {
   font-family: var(--font-lazydog), "Lazydog", system-ui, sans-serif;
   color: #fff;
-}
-
-.stonefruit-root--ops .sf-ops-panel {
-  background: rgba(255, 255, 255, 0.9);
-  border: 2px solid rgba(255, 255, 255, 0.95);
-  border-radius: 1.25rem;
-  padding: 1.25rem 1.1rem;
-  color: #3d6a72;
 }
 
 .stonefruit-root--ops .sf-ops-panel h2 {

@@ -12,6 +12,7 @@ import type {
   OrderStatus as PrismaOrderStatus,
   MenuCategory as PrismaMenuCategory,
 } from "@prisma/client";
+import { serializeLoveItems } from "@/lib/love-items";
 
 // ─── Types (kept stable for the client) ───────────────────────────────────────
 
@@ -22,6 +23,7 @@ export interface Popup {
   slug: string;
   name: string;
   isActive: boolean;
+  loveItems: string;
 }
 
 export interface MenuItemAddon {
@@ -163,12 +165,14 @@ function serializePopup(row: {
   slug: string;
   name: string;
   isActive: boolean;
+  loveItems?: string;
 }): Popup {
   return {
     id: row.id,
     slug: row.slug,
     name: row.name,
     isActive: row.isActive,
+    loveItems: serializeLoveItems(row.loveItems),
   };
 }
 
@@ -268,6 +272,22 @@ export async function setActivePopup(
   ]);
 
   return serializePopup({ ...target, isActive: true });
+}
+
+export async function updatePopupLoveItems(
+  slug: string,
+  loveItems: string
+): Promise<Popup | { error: string }> {
+  const cleaned = serializeLoveItems(loveItems);
+  try {
+    const row = await prisma.popup.update({
+      where: { slug },
+      data: { loveItems: cleaned },
+    });
+    return serializePopup(row);
+  } catch {
+    return { error: "Popup not found" };
+  }
 }
 
 // ─── Menu ─────────────────────────────────────────────────────────────────────

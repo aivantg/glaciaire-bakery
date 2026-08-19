@@ -16,6 +16,7 @@ model Popup {
   slug      String     @unique
   name      String
   isActive  Boolean    @default(false)
+  loveItems String     @default("cookies, fruit, pastry")
   createdAt DateTime   @default(now())
 
   menuItems MenuItem[]

@@ -47,11 +47,10 @@ export function StonefruitOrderPage({ slug, ordersPath }: PopupOrderPageProps) {
                   <div className="sf-menu-row">
                     <div className="flex shrink-0 items-center">
                       {item.decorator ? (
-                        <Image
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
                           src={decoratorSrc(slug, item.decorator)}
                           alt=""
-                          width={80}
-                          height={80}
                           className="sf-fruit-icon"
                         />
                       ) : null}

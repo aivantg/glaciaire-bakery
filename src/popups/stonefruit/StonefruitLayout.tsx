@@ -5,6 +5,7 @@ import { HostFooterLink } from "@/components/HostFooterLink";
 import { MadeWithLoveLink } from "@/components/MadeWithLoveLink";
 import type { PopupLayoutProps } from "../types";
 import { lazydog, petitCochon } from "./load-fonts";
+import { StonefruitBasket } from "./StonefruitBasket";
 import "./stonefruit-ui.css";
 
 export function StonefruitLayout({ slug, isHome, children }: PopupLayoutProps) {
@@ -44,15 +45,8 @@ export function StonefruitLayout({ slug, isHome, children }: PopupLayoutProps) {
         <MadeWithLoveLink />
       </footer>
 
-      <div className="sf-ground" aria-hidden>
-        <Image
-          src="/stonefruit/basket.png"
-          alt=""
-          width={220}
-          height={220}
-          className="sf-basket"
-          priority
-        />
+      <div className="sf-ground">
+        <StonefruitBasket />
       </div>
     </div>
   );

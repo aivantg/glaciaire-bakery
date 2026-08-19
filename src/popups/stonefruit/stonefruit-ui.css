@@ -253,12 +253,101 @@
 
 .stonefruit-root .sf-basket {
   position: absolute;
-  right: -0.75rem;
-  bottom: -0.35rem;
-  width: min(42vw, 180px);
-  pointer-events: none;
+  right: 1.5rem;
+  bottom: 1.4rem;
+  width: min(48vw, 200px);
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
   z-index: 2;
+  transform-origin: 70% 100%;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.stonefruit-root .sf-basket-img {
+  position: relative;
+  z-index: 3;
+  display: block;
+  width: 100%;
+  height: auto;
+  pointer-events: none;
   filter: drop-shadow(0 8px 12px rgba(40, 70, 40, 0.22));
+}
+
+.stonefruit-root .sf-basket-fill {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.stonefruit-root .sf-basket-fill--back {
+  z-index: 1;
+}
+
+.stonefruit-root .sf-basket-fill--front {
+  z-index: 4;
+}
+
+.stonefruit-root .sf-basket-fruit {
+  position: absolute;
+  height: auto;
+  object-fit: contain;
+  transform: rotate(var(--sf-rest-rot, 0deg));
+  transform-origin: 50% 80%;
+  filter: drop-shadow(0 2px 3px rgba(40, 70, 40, 0.28));
+}
+
+.stonefruit-root .sf-basket--rustle {
+  animation: sfBasketWiggle 0.42s ease-in-out;
+}
+
+.stonefruit-root .sf-basket--rustle .sf-basket-fruit {
+  animation: sfFruitRustle 0.5s ease-in-out both;
+  animation-delay: var(--sf-delay, 0ms);
+}
+
+@keyframes sfBasketWiggle {
+  0%,
+  100% {
+    transform: rotate(0deg);
+  }
+  28% {
+    transform: rotate(-2.2deg);
+  }
+  58% {
+    transform: rotate(1.6deg);
+  }
+}
+
+@keyframes sfFruitRustle {
+  0%,
+  100% {
+    transform: rotate(var(--sf-rest-rot, 0deg));
+  }
+  22% {
+    transform: translate(var(--sf-jx, 4px), var(--sf-jy, -4px))
+      rotate(calc(var(--sf-rest-rot, 0deg) + var(--sf-jr, 6deg)));
+  }
+  48% {
+    transform: translate(calc(var(--sf-jx, 4px) * -1), calc(var(--sf-jy, -4px) * 0.4))
+      rotate(calc(var(--sf-rest-rot, 0deg) - var(--sf-jr, 6deg)));
+  }
+  72% {
+    transform: translate(
+        calc(var(--sf-jx, 4px) * 0.35),
+        calc(var(--sf-jy, -4px) * 0.25)
+      )
+      rotate(calc(var(--sf-rest-rot, 0deg) + calc(var(--sf-jr, 6deg) * 0.35)));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stonefruit-root .sf-basket--rustle,
+  .stonefruit-root .sf-basket--rustle .sf-basket-fruit {
+    animation: none;
+  }
 }
 
 .stonefruit-root .sf-footer-link,

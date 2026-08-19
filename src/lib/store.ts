@@ -7,6 +7,7 @@
  */
 
 import { prisma } from "./db";
+import { Prisma } from "@prisma/client";
 import type {
   OrderStatus as PrismaOrderStatus,
   MenuCategory as PrismaMenuCategory,
@@ -126,6 +127,35 @@ const menuInclude = {
   addons: { orderBy: { name: "asc" as const } },
 };
 
+async function setDecorator(
+  id: string,
+  decorator: string | null,
+  tx: { $executeRaw: typeof prisma.$executeRaw } = prisma
+) {
+  await tx.$executeRaw`
+    UPDATE "MenuItem" SET decorator = ${decorator} WHERE id = ${id}
+  `;
+}
+
+async function loadDecorators(
+  ids: string[]
+): Promise<Map<string, string | null>> {
+  const map = new Map<string, string | null>();
+  if (ids.length === 0) return map;
+  const rows = await prisma.$queryRaw<{ id: string; decorator: string | null }[]>`
+    SELECT id, decorator FROM "MenuItem" WHERE id IN (${Prisma.join(ids)})
+  `;
+  for (const row of rows) map.set(row.id, row.decorator);
+  return map;
+}
+
+async function serializeMenuItems(rows: MenuItemRow[]): Promise<MenuItem[]> {
+  const extras = await loadDecorators(rows.map((row) => row.id));
+  return rows.map((row) =>
+    serializeMenuItem(row, extras.get(row.id) ?? row.decorator ?? null)
+  );
+}
+
 // ─── Serializers ──────────────────────────────────────────────────────────────
 
 function serializePopup(row: {
@@ -142,7 +172,10 @@ function serializePopup(row: {
   };
 }
 
-function serializeMenuItem(row: MenuItemRow): MenuItem {
+function serializeMenuItem(
+  row: MenuItemRow,
+  decorator: string | null = row.decorator ?? null
+): MenuItem {
   return {
     id: row.id,
     name: row.name,
@@ -151,7 +184,7 @@ function serializeMenuItem(row: MenuItemRow): MenuItem {
     available: row.available,
     archived: row.archived,
     category: row.category,
-    decorator: row.decorator,
+    decorator,
     createdAt: row.createdAt.toISOString(),
     addons: row.addons.map((a) => ({
       id: a.id,
@@ -245,7 +278,7 @@ export async function getAllMenuItems(popupId: string): Promise<MenuItem[]> {
     orderBy: { createdAt: "asc" },
     include: menuInclude,
   });
-  return rows.map(serializeMenuItem);
+  return serializeMenuItems(rows);
 }
 
 export async function getArchivedMenuItems(
@@ -256,7 +289,7 @@ export async function getArchivedMenuItems(
     orderBy: { createdAt: "asc" },
     include: menuInclude,
   });
-  return rows.map(serializeMenuItem);
+  return serializeMenuItems(rows);
 }
 
 export async function getMenuItemById(
@@ -267,7 +300,9 @@ export async function getMenuItemById(
     where: { id, popupId, archived: false },
     include: menuInclude,
   });
-  return row ? serializeMenuItem(row) : null;
+  if (!row) return null;
+  const [item] = await serializeMenuItems([row]);
+  return item;
 }
 
 export async function createMenuItem(
@@ -285,12 +320,13 @@ export async function createMenuItem(
       price: data.price,
       available: data.available,
       category: data.category,
-      decorator: data.decorator,
       addons: addonRows.length ? { create: addonRows } : undefined,
     },
     include: menuInclude,
   });
-  return serializeMenuItem(row);
+  await setDecorator(row.id, data.decorator);
+  const [item] = await serializeMenuItems([row]);
+  return item;
 }
 
 export async function updateMenuItem(
@@ -300,36 +336,38 @@ export async function updateMenuItem(
     addons?: MenuItemAddonInput[];
   }
 ): Promise<MenuItem | null> {
-  try {
-    const existing = await prisma.menuItem.findFirst({
-      where: { id, popupId },
-    });
-    if (!existing) return null;
+  const existing = await prisma.menuItem.findFirst({
+    where: { id, popupId },
+  });
+  if (!existing) return null;
 
-    const { addons, ...itemFields } = data;
-    const row = await prisma.$transaction(async (tx) => {
+  const { addons, decorator, ...itemFields } = data;
+  const row = await prisma.$transaction(async (tx) => {
+    if (Object.keys(itemFields).length > 0) {
       await tx.menuItem.update({
         where: { id },
         data: itemFields,
       });
-      if (addons !== undefined) {
-        await tx.menuItemAddon.deleteMany({ where: { menuItemId: id } });
-        const addonRows = normalizeAddonInputs(addons);
-        if (addonRows.length > 0) {
-          await tx.menuItemAddon.createMany({
-            data: addonRows.map((a) => ({ ...a, menuItemId: id })),
-          });
-        }
+    }
+    if (decorator !== undefined) {
+      await setDecorator(id, decorator, tx);
+    }
+    if (addons !== undefined) {
+      await tx.menuItemAddon.deleteMany({ where: { menuItemId: id } });
+      const addonRows = normalizeAddonInputs(addons);
+      if (addonRows.length > 0) {
+        await tx.menuItemAddon.createMany({
+          data: addonRows.map((a) => ({ ...a, menuItemId: id })),
+        });
       }
-      return tx.menuItem.findUniqueOrThrow({
-        where: { id },
-        include: menuInclude,
-      });
+    }
+    return tx.menuItem.findUniqueOrThrow({
+      where: { id },
+      include: menuInclude,
     });
-    return serializeMenuItem(row);
-  } catch {
-    return null;
-  }
+  });
+  const [item] = await serializeMenuItems([row]);
+  return item;
 }
 
 export async function archiveMenuItem(
@@ -361,7 +399,8 @@ export async function unarchiveMenuItem(
       where: { id },
       include: menuInclude,
     });
-    return serializeMenuItem(row);
+    const [item] = await serializeMenuItems([row]);
+    return item;
   } catch {
     return null;
   }

@@ -34,7 +34,7 @@ export function AdminMenuItemRow({
 }: AdminMenuItemRowProps) {
   return (
     <li
-      className={`py-5 flex flex-wrap items-start sm:items-center justify-between gap-x-4 gap-y-3 ${
+      className={`py-5 flex items-start sm:items-center justify-between gap-x-4 gap-y-3 ${
         dimmed || !item.available ? "opacity-50" : ""
       }`}
     >
@@ -43,10 +43,10 @@ export function AdminMenuItemRow({
         <img
           src={decoratorSrc}
           alt=""
-          className="h-10 w-10 object-contain shrink-0"
+          className="h-12 w-12 object-contain shrink-0"
         />
       ) : null}
-      <div className="min-w-0 flex-1 basis-full sm:basis-auto">
+      <div className="min-w-0 flex-1">
         <div className="flex items-baseline gap-2 flex-wrap">
           <span className="font-sans font-extrabold text-lg text-ink-900 break-words">
             {item.name}

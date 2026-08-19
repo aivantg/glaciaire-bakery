@@ -7,7 +7,6 @@ import {
 } from "@/lib/store";
 import { isHostAuthenticatedRequest } from "@/lib/host-session";
 import { parseAddons, VALID_CATEGORIES } from "@/lib/menu-parse";
-import { isAllowedDecorator } from "@/lib/decorators";
 import { resolvePopup } from "@/lib/popup-route";
 
 type Context = { params: Promise<{ slug: string; id: string }> };
@@ -83,18 +82,23 @@ export async function PUT(request: NextRequest, { params }: Context) {
     if (decorator === null || decorator === "") {
       updates.decorator = null;
     } else if (typeof decorator === "string") {
-      if (!isAllowedDecorator(resolved.popup.slug, decorator)) {
-        return NextResponse.json(
-          { error: "Unknown decorator" },
-          { status: 400 }
-        );
+      const file = decorator.trim();
+      if (file.includes("/") || file.includes("\\") || file.includes("..")) {
+        return NextResponse.json({ error: "Invalid decorator" }, { status: 400 });
       }
-      updates.decorator = decorator;
+      updates.decorator = file;
     }
   }
 
-  const updated = await updateMenuItem(resolved.popup.id, id, updates);
-  return NextResponse.json(updated);
+  try {
+    const updated = await updateMenuItem(resolved.popup.id, id, updates);
+    if (!updated) {
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
+    return NextResponse.json(updated);
+  } catch {
+    return NextResponse.json({ error: "Couldn't save. Try again." }, { status: 500 });
+  }
 }
 
 export async function DELETE(request: NextRequest, { params }: Context) {

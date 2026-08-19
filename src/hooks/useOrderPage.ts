@@ -47,7 +47,9 @@ export function useOrderPage({
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`${popupApiBase(slug)}/menu`);
+      const res = await fetch(`${popupApiBase(slug)}/menu`, {
+        cache: "no-store",
+      });
       if (!res.ok) throw new Error("Failed to load menu");
       const data: MenuItem[] = await res.json();
       setMenuItems(data.filter((item) => item.available));

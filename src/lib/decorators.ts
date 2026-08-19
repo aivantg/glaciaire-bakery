@@ -11,15 +11,22 @@ export { decoratorSrc };
 
 const IMAGE = /\.(png|jpe?g|webp|gif|svg)$/i;
 
-function decoratorsDir(slug: string): string {
-  return path.join(process.cwd(), "public", "popups", slug, "decorators");
-}
+/** Bundled fallback so the admin dropdown works if `public/` isn't on disk. */
+const FALLBACK_FILES: Record<string, string[]> = {
+  stonefruit: [
+    "apricots.png",
+    "cherries.png",
+    "coconut.png",
+    "lychees.png",
+    "mango-coconut.png",
+    "mango.png",
+    "peaches.png",
+    "plums.png",
+  ],
+};
 
-export function listPopupDecorators(slug: string): PopupDecorator[] {
-  const dir = decoratorsDir(slug);
-  if (!fs.existsSync(dir) || !fs.statSync(dir).isDirectory()) return [];
-  return fs
-    .readdirSync(dir)
+function toDecorators(slug: string, files: string[]): PopupDecorator[] {
+  return files
     .filter((file) => IMAGE.test(file) && !file.startsWith("."))
     .sort((a, b) => a.localeCompare(b))
     .map((file) => ({
@@ -27,6 +34,28 @@ export function listPopupDecorators(slug: string): PopupDecorator[] {
       label: decoratorLabel(file),
       src: decoratorSrc(slug, file),
     }));
+}
+
+function listFromDisk(slug: string): string[] {
+  const candidates = [
+    path.join(process.cwd(), "public", "popups", slug, "decorators"),
+    path.join(process.cwd(), "popups", slug, "decorators"),
+  ];
+  for (const dir of candidates) {
+    try {
+      if (!fs.existsSync(dir) || !fs.statSync(dir).isDirectory()) continue;
+      return fs.readdirSync(dir);
+    } catch {
+      continue;
+    }
+  }
+  return [];
+}
+
+export function listPopupDecorators(slug: string): PopupDecorator[] {
+  const fromDisk = toDecorators(slug, listFromDisk(slug));
+  if (fromDisk.length > 0) return fromDisk;
+  return toDecorators(slug, FALLBACK_FILES[slug] ?? []);
 }
 
 export function isAllowedDecorator(
@@ -37,5 +66,8 @@ export function isAllowedDecorator(
   if (file.includes("/") || file.includes("\\") || file.includes("..")) {
     return false;
   }
-  return listPopupDecorators(slug).some((d) => d.id === file);
+  if (!IMAGE.test(file)) return false;
+  const listed = listPopupDecorators(slug);
+  if (listed.length === 0) return true;
+  return listed.some((d) => d.id === file);
 }

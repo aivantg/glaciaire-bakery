@@ -79,10 +79,10 @@ export function AdminPageContent({ initialSlug }: { initialSlug?: string }) {
     try {
       const api = popupApiBase(slug);
       const [activeRes, archivedRes, statsRes, decoRes] = await Promise.all([
-        fetch(`${api}/menu`),
-        fetch(`${api}/menu/archived`),
-        fetch(`${api}/menu/stats`),
-        fetch(`${api}/decorators`),
+        fetch(`${api}/menu`, { cache: "no-store" }),
+        fetch(`${api}/menu/archived`, { cache: "no-store" }),
+        fetch(`${api}/menu/stats`, { cache: "no-store" }),
+        fetch(`${api}/decorators`, { cache: "no-store" }),
       ]);
       if (!activeRes.ok) throw new Error("Failed to load menu");
       setItems(await activeRes.json());
@@ -232,7 +232,8 @@ export function AdminPageContent({ initialSlug }: { initialSlug?: string }) {
       });
 
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "Save failed");
+      if (!res.ok) throw new Error(data?.error ?? "Save failed");
+      if (!data) throw new Error("Save failed");
 
       await fetchItems(selectedSlug);
       cancelEdit();
@@ -437,9 +438,9 @@ export function AdminPageContent({ initialSlug }: { initialSlug?: string }) {
         />
       ) : (
         <AdminMenuList
+          slug={selectedSlug}
           items={items}
           orderCounts={orderCounts}
-          decorators={decorators}
           archiving={archiving}
           confirm={confirm}
           onToggleAvailable={toggleAvailable}
@@ -450,9 +451,9 @@ export function AdminPageContent({ initialSlug }: { initialSlug?: string }) {
 
       {!loading && !error && (
         <ArchivedMenuSection
+          slug={selectedSlug}
           items={archivedItems}
           orderCounts={orderCounts}
-          decorators={decorators}
           unarchiving={unarchiving}
           confirm={confirm}
           onUnarchive={handleUnarchive}

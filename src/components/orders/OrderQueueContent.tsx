@@ -195,7 +195,7 @@ export function OrderQueueContent({
   }, [orders, now]);
 
   const filteredOrders = useMemo(
-    () => sortOrders(orders.filter((o) => matchesFilter(o, filter, now))),
+    () => sortOrders(orders.filter((o) => matchesFilter(o, filter, now)), now),
     [orders, filter, now]
   );
 

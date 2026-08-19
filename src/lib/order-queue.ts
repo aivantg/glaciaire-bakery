@@ -57,18 +57,23 @@ export function matchesFilter(
   return isFinishedOrder(order);
 }
 
-function orderSortRank(order: Order): number {
-  if (order.archived) return 4;
-  if (order.status === "done") return 1;
-  if (order.status === "in_progress") return 2;
-  return 3;
+/** Kitchen rail: making now, then just-handed-off, then next tickets, then pickup. */
+function orderSortRank(order: Order, now: number): number {
+  if (order.archived) return 5;
+  if (order.status === "in_progress") return 1;
+  if (isRecentlyFinished(order, now)) return 2;
+  if (order.status === "pending") return 3;
+  return 4;
 }
 
-export function sortOrders(orders: Order[]): Order[] {
+export function sortOrders(orders: Order[], now: number = Date.now()): Order[] {
   return [...orders].sort((a, b) => {
-    const rankDiff = orderSortRank(a) - orderSortRank(b);
+    const rankDiff = orderSortRank(a, now) - orderSortRank(b, now);
     if (rankDiff !== 0) return rankDiff;
-    return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
+    if (isRecentlyFinished(a, now) && isRecentlyFinished(b, now)) {
+      return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
+    }
+    return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
   });
 }
 

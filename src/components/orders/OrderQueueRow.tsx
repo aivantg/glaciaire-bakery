@@ -73,10 +73,10 @@ export function OrderQueueRow({
                 </span>
               </div>
               {line.addons.length > 0 && (
-                <ul className={`ml-3 ${addonSublistClass} font-normal`}>
+                <ul className={`ml-3 ${addonSublistClass} order-queue-addons`}>
                   {line.addons.map((addon, j) => (
-                    <li key={j}>
-                      <span className="text-ink-400">+ </span>
+                    <li key={j} className="font-semibold text-ink-800">
+                      <span className="font-normal text-ink-500">+ </span>
                       {addon.name}
                     </li>
                   ))}
@@ -85,6 +85,11 @@ export function OrderQueueRow({
             </li>
           ))}
         </ul>
+        {order.notes?.trim() ? (
+          <p className="mt-2 font-sans text-sm font-semibold text-ink-800">
+            note: {order.notes.trim()}
+          </p>
+        ) : null}
         <div className="font-mono text-xs text-ink-400 mt-1">
           {formatTime(order.createdAt)} · total ${formatPrice(order.total)}
         </div>

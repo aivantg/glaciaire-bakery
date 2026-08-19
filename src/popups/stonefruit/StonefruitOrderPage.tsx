@@ -41,9 +41,12 @@ export function StonefruitOrderPage({ slug, ordersPath }: PopupOrderPageProps) {
                 const qty = page.totalQtyForMenuItem(item.id);
                 const addonIds = page.getAddonIdsForItem(item.id);
                 const addons = availableAddons(item);
+                const soldOut = !item.available;
                 return (
                   <li key={item.id}>
-                    <div className="sf-menu-row">
+                    <div
+                      className={`sf-menu-row${soldOut ? " sf-menu-row--sold-out" : ""}`}
+                    >
                       {item.decorator ? (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img
@@ -54,7 +57,12 @@ export function StonefruitOrderPage({ slug, ordersPath }: PopupOrderPageProps) {
                       ) : null}
                       <div className="sf-item-body">
                         <div className="sf-item-headline">
-                          <div className="sf-item-name">{item.name}</div>
+                          <div className="sf-item-name">
+                            {item.name}
+                            {soldOut ? (
+                              <span className="sf-sold-out"> sold out</span>
+                            ) : null}
+                          </div>
                           <div className="sf-item-actions">
                             <div className="sf-item-price">
                               ${formatPrice(item.price)}
@@ -64,7 +72,7 @@ export function StonefruitOrderPage({ slug, ordersPath }: PopupOrderPageProps) {
                                 type="button"
                                 className="sf-counter-btn"
                                 onClick={() => page.removeMostRecent(item)}
-                                disabled={qty === 0}
+                                disabled={soldOut || qty === 0}
                                 aria-label={`Remove ${item.name}`}
                               >
                                 −
@@ -74,6 +82,7 @@ export function StonefruitOrderPage({ slug, ordersPath }: PopupOrderPageProps) {
                                 type="button"
                                 className="sf-counter-btn"
                                 onClick={() => page.addOne(item, addonIds)}
+                                disabled={soldOut}
                                 aria-label={`Add ${item.name}`}
                               >
                                 +
@@ -97,6 +106,7 @@ export function StonefruitOrderPage({ slug, ordersPath }: PopupOrderPageProps) {
                                   type="button"
                                   className="sf-addon-chip"
                                   aria-pressed={selected}
+                                  disabled={soldOut}
                                   onClick={() =>
                                     page.toggleAddonSelection(
                                       item.id,

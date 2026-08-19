@@ -12,6 +12,10 @@ type AdminMenuItemRowProps = {
   orderCount: number;
   decoratorSrc?: string | null;
   dimmed?: boolean;
+  canMoveUp?: boolean;
+  canMoveDown?: boolean;
+  moving?: boolean;
+  onMove?: (item: MenuItem, direction: "up" | "down") => void;
   onToggleAvailable?: (item: MenuItem) => void;
   onEdit?: (item: MenuItem) => void;
   archiveAction?: {
@@ -28,6 +32,10 @@ export function AdminMenuItemRow({
   orderCount,
   decoratorSrc,
   dimmed = false,
+  canMoveUp = false,
+  canMoveDown = false,
+  moving = false,
+  onMove,
   onToggleAvailable,
   onEdit,
   archiveAction,
@@ -79,12 +87,34 @@ export function AdminMenuItemRow({
           </p>
         </div>
       </div>
-      {(onToggleAvailable || onEdit || archiveAction) && (
+      {(onMove || onToggleAvailable || onEdit || archiveAction) && (
         <div
           className={`mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 sm:mt-0 sm:shrink-0 sm:pl-0 ${
             decoratorSrc ? "pl-[3.75rem]" : ""
           }`}
         >
+          {onMove && (
+            <>
+              <button
+                type="button"
+                onClick={() => onMove(item, "up")}
+                disabled={!canMoveUp || moving}
+                className="link-mono text-ink-600 disabled:opacity-30"
+                aria-label={`Move ${item.name} up`}
+              >
+                ↑
+              </button>
+              <button
+                type="button"
+                onClick={() => onMove(item, "down")}
+                disabled={!canMoveDown || moving}
+                className="link-mono text-ink-600 disabled:opacity-30"
+                aria-label={`Move ${item.name} down`}
+              >
+                ↓
+              </button>
+            </>
+          )}
           {onToggleAvailable && (
             <button
               type="button"

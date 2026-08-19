@@ -30,15 +30,17 @@ export function TemplateOrderPage({ slug, ordersPath }: PopupOrderPageProps) {
                   const qty = page.totalQtyForMenuItem(item.id);
                   const addonIds = page.getAddonIdsForItem(item.id);
                   const addons = availableAddons(item);
+                  const soldOut = !item.available;
                   return (
-                    <li key={item.id}>
+                    <li key={item.id} style={soldOut ? { opacity: 0.5 } : undefined}>
                       <div>
                         <strong>{item.name}</strong>
+                        {soldOut ? " (sold out)" : ""}
                         {" — $"}
                         {formatPrice(item.price)}
                         {item.description ? ` — ${item.description}` : ""}
                       </div>
-                      {addons.length > 0 && (
+                      {addons.length > 0 && !soldOut && (
                         <div>
                           {addons.map((addon) => {
                             const selected = addonIds.includes(addon.id);
@@ -63,7 +65,7 @@ export function TemplateOrderPage({ slug, ordersPath }: PopupOrderPageProps) {
                         <button
                           type="button"
                           onClick={() => page.removeMostRecent(item)}
-                          disabled={qty === 0}
+                          disabled={soldOut || qty === 0}
                         >
                           −
                         </button>
@@ -71,6 +73,7 @@ export function TemplateOrderPage({ slug, ordersPath }: PopupOrderPageProps) {
                         <button
                           type="button"
                           onClick={() => page.addOne(item, addonIds)}
+                          disabled={soldOut}
                         >
                           +
                         </button>

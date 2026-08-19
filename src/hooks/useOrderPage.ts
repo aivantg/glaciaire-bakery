@@ -52,7 +52,7 @@ export function useOrderPage({
       });
       if (!res.ok) throw new Error("Failed to load menu");
       const data: MenuItem[] = await res.json();
-      setMenuItems(data.filter((item) => item.available));
+      setMenuItems(data);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Unknown error");
     } finally {
@@ -69,6 +69,7 @@ export function useOrderPage({
   }
 
   function addOne(item: MenuItem, addonIds: string[]) {
+    if (!item.available) return;
     const key = makeCartKey(item.id, addonIds);
     setAddHistory((prev) => ({
       ...prev,
@@ -109,6 +110,8 @@ export function useOrderPage({
   }
 
   function toggleAddonSelection(itemId: string, addonId: string) {
+    const menuItem = menuItems.find((m) => m.id === itemId);
+    if (menuItem && !menuItem.available) return;
     setActiveAddonIds((prev) => {
       const current = prev[itemId] ?? [];
       const next = current.includes(addonId)

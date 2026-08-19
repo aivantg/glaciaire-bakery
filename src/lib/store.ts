@@ -48,6 +48,7 @@ export interface MenuItem {
   archived: boolean;
   category: MenuCategory;
   decorator: string | null;
+  sortOrder: number;
   createdAt: string;
   addons: MenuItemAddon[];
 }
@@ -98,6 +99,7 @@ type MenuItemRow = {
   archived: boolean;
   category: PrismaMenuCategory;
   decorator: string | null;
+  sortOrder: number;
   createdAt: Date;
   addons: {
     id: string;
@@ -189,6 +191,7 @@ function serializeMenuItem(
     archived: row.archived,
     category: row.category,
     decorator,
+    sortOrder: row.sortOrder,
     createdAt: row.createdAt.toISOString(),
     addons: row.addons.map((a) => ({
       id: a.id,
@@ -295,7 +298,7 @@ export async function updatePopupLoveItems(
 export async function getAllMenuItems(popupId: string): Promise<MenuItem[]> {
   const rows = await prisma.menuItem.findMany({
     where: { popupId, archived: false },
-    orderBy: { createdAt: "asc" },
+    orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
     include: menuInclude,
   });
   return serializeMenuItems(rows);
@@ -306,7 +309,7 @@ export async function getArchivedMenuItems(
 ): Promise<MenuItem[]> {
   const rows = await prisma.menuItem.findMany({
     where: { popupId, archived: true },
-    orderBy: { createdAt: "asc" },
+    orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
     include: menuInclude,
   });
   return serializeMenuItems(rows);
@@ -327,11 +330,16 @@ export async function getMenuItemById(
 
 export async function createMenuItem(
   popupId: string,
-  data: Omit<MenuItem, "id" | "createdAt" | "addons" | "archived"> & {
+  data: Omit<MenuItem, "id" | "createdAt" | "addons" | "archived" | "sortOrder"> & {
     addons?: MenuItemAddonInput[];
   }
 ): Promise<MenuItem> {
   const addonRows = normalizeAddonInputs(data.addons);
+  const max = await prisma.menuItem.aggregate({
+    where: { popupId },
+    _max: { sortOrder: true },
+  });
+  const sortOrder = (max._max.sortOrder ?? -1) + 1;
   const row = await prisma.menuItem.create({
     data: {
       popupId,
@@ -340,6 +348,7 @@ export async function createMenuItem(
       price: data.price,
       available: data.available,
       category: data.category,
+      sortOrder,
       addons: addonRows.length ? { create: addonRows } : undefined,
     },
     include: menuInclude,
@@ -424,6 +433,33 @@ export async function unarchiveMenuItem(
   } catch {
     return null;
   }
+}
+
+/** Swap a menu item one slot up or down; returns the reordered active list. */
+export async function moveMenuItem(
+  popupId: string,
+  id: string,
+  direction: "up" | "down"
+): Promise<MenuItem[] | null> {
+  const items = await getAllMenuItems(popupId);
+  const idx = items.findIndex((item) => item.id === id);
+  if (idx < 0) return null;
+  const swapIdx = direction === "up" ? idx - 1 : idx + 1;
+  if (swapIdx < 0 || swapIdx >= items.length) return items;
+
+  const next = [...items];
+  [next[idx], next[swapIdx]] = [next[swapIdx], next[idx]];
+
+  await prisma.$transaction(
+    next.map((item, sortOrder) =>
+      prisma.menuItem.update({
+        where: { id: item.id },
+        data: { sortOrder },
+      })
+    )
+  );
+
+  return getAllMenuItems(popupId);
 }
 
 // ─── Orders ───────────────────────────────────────────────────────────────────

@@ -101,7 +101,7 @@ async function seedItems(
     });
   }
 
-  for (const item of items) {
+  for (const [index, item] of items.entries()) {
     const existing = await prisma.menuItem.findFirst({
       where: { name: item.name, popupId },
     });
@@ -116,6 +116,7 @@ async function seedItems(
           category: categoryValue,
           archived: false,
           available: true,
+          sortOrder: index,
           addons: addons
             ? {
                 deleteMany: {},
@@ -132,6 +133,7 @@ async function seedItems(
         ...fields,
         popupId,
         category: categoryValue,
+        sortOrder: index,
         addons: addons?.length
           ? { create: addons.map((a) => ({ name: a.name, price: a.price })) }
           : undefined,

@@ -41,12 +41,14 @@ model MenuItem {
   archived    Boolean      @default(false)
   category    MenuCategory @default(pastries)
   decorator   String?
+  sortOrder   Int          @default(0)
   createdAt   DateTime     @default(now())
 
   orderItems  OrderItem[]
   addons      MenuItemAddon[]
 
   @@index([popupId])
+  @@index([popupId, sortOrder])
   @@index([available])
   @@index([archived])
   @@index([category])

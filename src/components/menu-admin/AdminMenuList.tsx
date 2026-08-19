@@ -10,7 +10,9 @@ type AdminMenuListProps = {
   items: MenuItem[];
   orderCounts: Record<string, number>;
   archiving: string | null;
+  movingId?: string | null;
   confirm: ReturnType<typeof useConfirmAction>;
+  onMove?: (item: MenuItem, direction: "up" | "down") => void;
   onToggleAvailable: (item: MenuItem) => void;
   onEdit: (item: MenuItem) => void;
   onArchive: (id: string) => void;
@@ -21,14 +23,16 @@ export function AdminMenuList({
   items,
   orderCounts,
   archiving,
+  movingId = null,
   confirm,
+  onMove,
   onToggleAvailable,
   onEdit,
   onArchive,
 }: AdminMenuListProps) {
   return (
     <ul className="list-hairline mt-10">
-      {items.map((item) => (
+      {items.map((item, index) => (
         <AdminMenuItemRow
           key={item.id}
           item={item}
@@ -36,6 +40,10 @@ export function AdminMenuList({
             item.decorator ? decoratorSrc(slug, item.decorator) : null
           }
           orderCount={orderCounts[item.id] ?? 0}
+          canMoveUp={index > 0}
+          canMoveDown={index < items.length - 1}
+          moving={movingId === item.id}
+          onMove={onMove}
           onToggleAvailable={onToggleAvailable}
           onEdit={onEdit}
           archiveAction={{

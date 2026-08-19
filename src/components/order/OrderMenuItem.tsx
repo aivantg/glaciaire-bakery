@@ -25,16 +25,22 @@ export function OrderMenuItem({
   onToggleAddon,
 }: OrderMenuItemProps) {
   const addons = availableAddons(item);
+  const soldOut = !item.available;
 
   return (
-    <li className="py-5 sm:py-6">
+    <li className={`py-5 sm:py-6${soldOut ? " opacity-50" : ""}`}>
       <div className="flex items-center justify-between gap-3 sm:gap-4">
         <div className="min-w-0 flex-1">
           <div
             className="font-sans font-extrabold text-xl sm:text-3xl tracking-tight break-words"
-            style={{ color }}
+            style={{ color: soldOut ? undefined : color }}
           >
             {item.name}
+            {soldOut ? (
+              <span className="ml-2 text-sm font-bold uppercase tracking-widest text-ink-400">
+                sold out
+              </span>
+            ) : null}
           </div>
           {item.description && (
             <div className="font-sans text-sm text-ink-400 mt-1 max-w-md">
@@ -52,6 +58,7 @@ export function OrderMenuItem({
                 type="button"
                 onClick={() => onRemove(item)}
                 className="counter-btn"
+                disabled={soldOut}
                 aria-label={`remove last ${item.name} added`}
               >
                 −
@@ -68,20 +75,23 @@ export function OrderMenuItem({
             type="button"
             onClick={() => onAdd(item, selectedAddonIds)}
             className="counter-btn"
-            style={{ color }}
+            style={{ color: soldOut ? undefined : color }}
+            disabled={soldOut}
             aria-label={`add ${item.name}`}
           >
             +
           </button>
         </div>
       </div>
-      <AddonSelector
-        itemId={item.id}
-        addons={addons}
-        selectedAddonIds={selectedAddonIds}
-        color={color}
-        onToggle={onToggleAddon}
-      />
+      {!soldOut && (
+        <AddonSelector
+          itemId={item.id}
+          addons={addons}
+          selectedAddonIds={selectedAddonIds}
+          color={color}
+          onToggle={onToggleAddon}
+        />
+      )}
     </li>
   );
 }

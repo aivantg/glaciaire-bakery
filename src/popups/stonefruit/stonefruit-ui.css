@@ -77,6 +77,18 @@
   background: rgba(255, 255, 255, 0.2);
 }
 
+/* Home / queue (and other header pills) sit on the sky — solid white. */
+.stonefruit-root header .sf-nav-pill {
+  background: #fff;
+  color: #3d6a72;
+  text-shadow: none;
+}
+
+.stonefruit-root header .sf-nav-pill:hover {
+  background: #fff;
+  filter: brightness(0.97);
+}
+
 .stonefruit-root .sf-stage {
   position: sticky;
   top: 0;
@@ -179,6 +191,9 @@
   background-size: 100% auto;
   background-position: center top;
   background-repeat: no-repeat;
+  /* Extend meadow green into the iOS home-indicator safe area. */
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  box-sizing: content-box;
 }
 
 /* Admin/host: same underlap as menu/queue — content sits on the sky/clouds,
@@ -236,6 +251,21 @@
   color: #fff;
 }
 
+.stonefruit-root .sf-ops-panel .sf-btn-ghost {
+  color: #3d6a72;
+}
+
+.stonefruit-root .sf-ops-panel .sf-nav-pill {
+  border-color: rgba(61, 106, 114, 0.35);
+  color: #3d6a72;
+  background: transparent;
+  text-shadow: none;
+}
+
+.stonefruit-root .sf-ops-panel .sf-nav-pill:hover {
+  background: rgba(61, 106, 114, 0.08);
+}
+
 .stonefruit-root .sf-menu-list {
   display: flex;
   flex-direction: column;
@@ -252,6 +282,18 @@
   display: flex;
   align-items: center;
   gap: 0.55rem;
+}
+
+.stonefruit-root .sf-menu-row--sold-out {
+  opacity: 0.42;
+}
+
+.stonefruit-root .sf-sold-out {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(61, 106, 114, 0.75);
 }
 
 .stonefruit-root .sf-fruit-icon {
@@ -656,6 +698,10 @@
 .stonefruit-root--ops header span {
   font-family: var(--font-lazydog), "Lazydog", system-ui, sans-serif;
   color: #fff;
+}
+
+.stonefruit-root--ops header .sf-nav-pill {
+  color: #3d6a72;
 }
 
 .stonefruit-root--ops .sf-ops-panel h2 {

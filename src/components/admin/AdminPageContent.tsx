@@ -49,6 +49,7 @@ export function AdminPageContent({ initialSlug }: { initialSlug?: string }) {
   const [saving, setSaving] = useState(false);
   const [archiving, setArchiving] = useState<string | null>(null);
   const [unarchiving, setUnarchiving] = useState<string | null>(null);
+  const [movingId, setMovingId] = useState<string | null>(null);
   const confirm = useConfirmAction(CONFIRM_MS);
 
   useEffect(() => {
@@ -304,6 +305,23 @@ export function AdminPageContent({ initialSlug }: { initialSlug?: string }) {
     }
   }
 
+  async function moveItem(item: MenuItem, direction: "up" | "down") {
+    setMovingId(item.id);
+    try {
+      const res = await fetch(`${popupApiBase(selectedSlug)}/menu/reorder`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: item.id, direction }),
+      });
+      if (!res.ok) return;
+      setItems(await res.json());
+    } catch {
+      // ignore
+    } finally {
+      setMovingId(null);
+    }
+  }
+
   async function makeHomepage(slug: string) {
     setSettingActive(true);
     try {
@@ -357,66 +375,67 @@ export function AdminPageContent({ initialSlug }: { initialSlug?: string }) {
 
   return (
     <HostShell>
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h1 className="text-5xl sm:text-6xl">popups</h1>
-          <p className="mt-2 text-white/85">
+      <h1 className="text-5xl sm:text-6xl">popups</h1>
+
+      <div className="sf-ops-panel mt-6">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <p className="text-sm opacity-80">
             Choose a popup to edit its menu. Mark one as the homepage.
           </p>
-        </div>
-        <button
-          type="button"
-          className="sf-btn-ghost shrink-0"
-          onClick={() => logout()}
-        >
-          host logout
-        </button>
-      </div>
-
-      <div className="mt-6 flex flex-wrap gap-2">
-        {popups.map((popup) => (
           <button
-            key={popup.slug}
             type="button"
-            onClick={() => {
-              setSelectedSlug(popup.slug);
-              cancelEdit();
-              router.replace(`/admin?popup=${popup.slug}`);
-            }}
-            className={
-              popup.slug === selectedSlug
-                ? "sf-btn-primary px-3 py-1"
-                : "sf-nav-pill"
-            }
+            className="sf-btn-ghost shrink-0"
+            onClick={() => logout()}
           >
-            {popup.name}
-            {popup.isActive ? " (homepage)" : ""}
+            host logout
           </button>
-        ))}
-      </div>
-
-      {selected && (
-        <div className="mt-4 flex flex-wrap items-center gap-3 text-sm text-white/90">
-          {selected.isActive ? (
-            <span>This popup is on the homepage.</span>
-          ) : (
-            <button
-              type="button"
-              className="sf-btn-ghost"
-              onClick={() => makeHomepage(selected.slug)}
-              disabled={settingActive}
-            >
-              {settingActive ? "Saving…" : "Set as homepage"}
-            </button>
-          )}
-          <a href={`/${selected.slug}`} className="sf-btn-ghost">
-            View site
-          </a>
-          <a href={`/${selected.slug}/orders`} className="sf-btn-ghost">
-            View queue
-          </a>
         </div>
-      )}
+
+        <div className="mt-5 flex flex-wrap gap-2">
+          {popups.map((popup) => (
+            <button
+              key={popup.slug}
+              type="button"
+              onClick={() => {
+                setSelectedSlug(popup.slug);
+                cancelEdit();
+                router.replace(`/admin?popup=${popup.slug}`);
+              }}
+              className={
+                popup.slug === selectedSlug
+                  ? "sf-btn-primary px-3 py-1"
+                  : "sf-nav-pill"
+              }
+            >
+              {popup.name}
+              {popup.isActive ? " (homepage)" : ""}
+            </button>
+          ))}
+        </div>
+
+        {selected && (
+          <div className="mt-4 flex flex-wrap items-center gap-3 text-sm">
+            {selected.isActive ? (
+              <span className="opacity-80">This popup is on the homepage.</span>
+            ) : (
+              <button
+                type="button"
+                className="sf-btn-ghost"
+                onClick={() => makeHomepage(selected.slug)}
+                disabled={settingActive}
+              >
+                {settingActive ? "Saving…" : "Set as homepage"}
+              </button>
+            )}
+            <a href={`/${selected.slug}`} className="sf-btn-ghost">
+              View site
+            </a>
+            <a href={`/${selected.slug}/orders`} className="sf-btn-ghost">
+              View queue
+            </a>
+          </div>
+        )}
+      </div>
 
       <div
         className={`sf-ops-panel mt-8 ${
@@ -481,7 +500,9 @@ export function AdminPageContent({ initialSlug }: { initialSlug?: string }) {
           items={items}
           orderCounts={orderCounts}
           archiving={archiving}
+          movingId={movingId}
           confirm={confirm}
+          onMove={moveItem}
           onToggleAvailable={toggleAvailable}
           onEdit={startEdit}
           onArchive={handleArchive}

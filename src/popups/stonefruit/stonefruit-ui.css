@@ -40,6 +40,10 @@
   min-height: var(--sf-fit-height, 100dvh);
 }
 
+.stonefruit-root.stonefruit-root--ops {
+  min-height: var(--sf-fit-height, 100dvh);
+}
+
 .stonefruit-root .sf-display {
   font-family: var(--font-petit-cochon), "Petit Cochon", system-ui, sans-serif;
   font-weight: 400;
@@ -177,8 +181,15 @@
   background-repeat: no-repeat;
 }
 
-.stonefruit-root.stonefruit-root--ops .sf-ground {
-  margin-top: auto;
+/* Admin/host: same underlap as menu/queue — content sits on the sky/clouds,
+   full picnic strip below, leftover viewport height stays blue above. */
+.stonefruit-root.stonefruit-root--ops .sf-stage {
+  position: relative;
+  z-index: 10;
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
 }
 
 .stonefruit-root .sf-ground-footer {
@@ -634,7 +645,7 @@
   color: #fff;
 }
 
-.stonefruit-root--ops > main > h1 {
+.stonefruit-root--ops main > h1 {
   font-family: var(--font-petit-cochon), "Petit Cochon", system-ui, sans-serif;
   font-weight: 400;
   color: #fff;

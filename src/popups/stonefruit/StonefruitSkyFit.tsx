@@ -26,9 +26,7 @@ type FitLock = {
  */
 export function StonefruitSkyFit() {
   useEffect(() => {
-    const root = document.querySelector<HTMLElement>(
-      ".stonefruit-root:not(.stonefruit-root--ops)"
-    );
+    const root = document.querySelector<HTMLElement>(".stonefruit-root");
     const stage = root?.querySelector<HTMLElement>(".sf-stage");
     if (!root || !stage) return;
 

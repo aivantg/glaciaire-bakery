@@ -2,7 +2,7 @@ import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
-const SEED_ITEMS = [
+const PASSION_ITEMS = [
   {
     name: "Croissant",
     description: "Buttery, flaky French pastry",
@@ -30,10 +30,46 @@ const SEED_ITEMS = [
   },
 ];
 
-async function main() {
-  for (const item of SEED_ITEMS) {
+const STONEFRUIT_ITEMS = [
+  {
+    name: "Peach Galette",
+    description: "Rustic tart with ripe summer peaches",
+    price: 650,
+  },
+  {
+    name: "Plum Frangipane",
+    description: "Almond cream and dark plums",
+    price: 700,
+  },
+  {
+    name: "Apricot Danish",
+    description: "Laminated pastry with apricot jam",
+    price: 450,
+  },
+  {
+    name: "Iced Tea",
+    description: "Black tea, lemon, a little sugar",
+    price: 300,
+    category: "cafe" as const,
+    addons: [{ name: "Peach syrup", price: 50 }],
+  },
+];
+
+async function upsertPopup(slug: string, name: string, isActive: boolean) {
+  return prisma.popup.upsert({
+    where: { slug },
+    create: { id: slug, slug, name, isActive },
+    update: { name },
+  });
+}
+
+async function seedItems(
+  popupId: string,
+  items: typeof PASSION_ITEMS | typeof STONEFRUIT_ITEMS
+) {
+  for (const item of items) {
     const existing = await prisma.menuItem.findFirst({
-      where: { name: item.name },
+      where: { name: item.name, popupId },
     });
     if (existing) continue;
 
@@ -41,6 +77,7 @@ async function main() {
     await prisma.menuItem.create({
       data: {
         ...fields,
+        popupId,
         category: category ?? "pastries",
         addons: addons?.length
           ? { create: addons.map((a) => ({ name: a.name, price: a.price })) }
@@ -48,6 +85,23 @@ async function main() {
       },
     });
   }
+}
+
+async function main() {
+  const passion = await upsertPopup("passion", "Passion", true);
+  const stonefruit = await upsertPopup("stonefruit", "Stonefruit", false);
+
+  const anyActive = await prisma.popup.count({ where: { isActive: true } });
+  if (anyActive === 0) {
+    await prisma.popup.update({
+      where: { id: passion.id },
+      data: { isActive: true },
+    });
+  }
+
+  await seedItems(passion.id, PASSION_ITEMS);
+  await seedItems(stonefruit.id, STONEFRUIT_ITEMS);
+
   const count = await prisma.menuItem.count();
   console.log(`Seed complete. Menu items in db: ${count}`);
 }

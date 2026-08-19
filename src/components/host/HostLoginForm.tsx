@@ -14,7 +14,7 @@ import { applyPinEdit, digitsOnly } from "@/lib/pin-input";
 export function HostLoginForm() {
   const router = useRouter();
   const params = useSearchParams();
-  const next = params.get("next") || "/menu";
+  const next = params.get("next") || "/admin";
 
   const [pin, setPin] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -132,7 +132,6 @@ export function HostLoginForm() {
       <button
         type="submit"
         disabled={submitting || pin.length === 0}
-        className="btn-dark"
       >
         {submitting ? "checking…" : "unlock"}
       </button>

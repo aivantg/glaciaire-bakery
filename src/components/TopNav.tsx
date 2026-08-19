@@ -4,24 +4,28 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import logo from "@/app/logo.jpg";
+import { customerPath, ordersPath } from "@/lib/popups";
 
-export function TopNav() {
+export function TopNav({ slug, isHome }: { slug: string; isHome: boolean }) {
   const pathname = usePathname();
-
-  // The /stonefruit preview site brings its own peach-themed header.
-  if (pathname?.startsWith("/stonefruit")) return null;
+  const homeHref = customerPath(slug, isHome);
+  const queueHref = ordersPath(slug, isHome);
 
   let counterpart: { href: string; label: string } | null = null;
-  if (pathname === "/" || pathname === "/order") {
-    counterpart = { href: "/orders", label: "queue" };
-  } else if (pathname === "/orders") {
-    counterpart = { href: "/", label: "menu" };
+  if (
+    pathname === "/" ||
+    pathname === "/order" ||
+    pathname === `/${slug}`
+  ) {
+    counterpart = { href: queueHref, label: "queue" };
+  } else if (pathname === "/orders" || pathname === `/${slug}/orders`) {
+    counterpart = { href: homeHref, label: "menu" };
   }
 
   return (
     <header className="max-w-5xl mx-auto w-full px-4 sm:px-6 pt-5 sm:pt-6 pb-2 flex items-center justify-between gap-3 text-sm">
       <Link
-        href="/"
+        href={homeHref}
         className="flex items-center gap-2 min-w-0 font-sans italic font-black text-ink-900 tracking-tight text-lg hover:opacity-80"
       >
         <Image

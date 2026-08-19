@@ -1,0 +1,15 @@
+@import url("https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,500;1,700;1,900&family=DM+Mono:wght@400;500&family=Caveat:wght@500;700&display=swap");
+
+.passion-root {
+  --lilac: #ece1f3;
+  --ink: #0a0a0a;
+  --hairline: rgba(10, 10, 10, 0.12);
+  background: var(--lilac);
+  color: var(--ink);
+  font-family: "Inter", system-ui, sans-serif;
+  font-weight: 500;
+  -webkit-font-smoothing: antialiased;
+  letter-spacing: -0.005em;
+  min-height: 100dvh;
+  width: 100%;
+}

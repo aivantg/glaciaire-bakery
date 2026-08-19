@@ -11,6 +11,19 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model Popup {
+  id        String     @id @default(cuid())
+  slug      String     @unique
+  name      String
+  isActive  Boolean    @default(false)
+  createdAt DateTime   @default(now())
+
+  menuItems MenuItem[]
+  orders    Order[]
+
+  @@index([isActive])
+}
+
 enum MenuCategory {
   cafe
   pastries
@@ -18,6 +31,8 @@ enum MenuCategory {
 
 model MenuItem {
   id          String       @id @default(cuid())
+  popupId     String
+  popup       Popup        @relation(fields: [popupId], references: [id], onDelete: Restrict)
   name        String
   description String       @default("")
   price       Int          // cents
@@ -29,6 +44,7 @@ model MenuItem {
   orderItems  OrderItem[]
   addons      MenuItemAddon[]
 
+  @@index([popupId])
   @@index([available])
   @@index([archived])
   @@index([category])
@@ -53,6 +69,8 @@ enum OrderStatus {
 
 model Order {
   id            String      @id @default(cuid())
+  popupId       String
+  popup         Popup       @relation(fields: [popupId], references: [id], onDelete: Restrict)
   customerName  String?
   notes         String?
   status        OrderStatus @default(pending)
@@ -64,6 +82,7 @@ model Order {
 
   items         OrderItem[]
 
+  @@index([popupId])
   @@index([status])
   @@index([createdAt])
   @@index([archived])
@@ -93,4 +112,3 @@ model OrderItemAddon {
   name        String    // snapshot
   unitPrice   Int       // cents snapshot
 }
-

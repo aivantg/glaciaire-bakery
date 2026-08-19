@@ -5,6 +5,8 @@ const config: Config = {
     "./src/pages/**/*.{js,ts,jsx,tsx,mdx}",
     "./src/components/**/*.{js,ts,jsx,tsx,mdx}",
     "./src/app/**/*.{js,ts,jsx,tsx,mdx}",
+    "./src/popups/**/*.{js,ts,jsx,tsx,mdx}",
+    "./src/hooks/**/*.{js,ts,jsx,tsx,mdx}",
   ],
   theme: {
     extend: {
@@ -89,6 +91,8 @@ const config: Config = {
           "monospace",
         ],
         script: ["'Caveat'", "cursive"],
+        lazydog: ["'Lazydog'", "system-ui", "sans-serif"],
+        bagel: ["'Bagel Fat One'", "'Lazydog'", "system-ui", "sans-serif"],
       },
       keyframes: {
         slideInDown: {

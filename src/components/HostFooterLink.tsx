@@ -3,14 +3,27 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useHostSession } from "@/hooks/useHostSession";
+import { isReservedSlug } from "@/lib/popups";
 
-const FOOTER_PATHS = ["/", "/order", "/orders"];
+function showOnPath(pathname: string): boolean {
+  if (["/", "/order", "/orders"].includes(pathname)) return true;
+  const parts = pathname.split("/").filter(Boolean);
+  if (parts.length === 1 && !isReservedSlug(parts[0])) return true;
+  if (
+    parts.length === 2 &&
+    parts[1] === "orders" &&
+    !isReservedSlug(parts[0])
+  ) {
+    return true;
+  }
+  return false;
+}
 
 export function HostFooterLink() {
   const pathname = usePathname();
   const { authenticated, logout } = useHostSession();
 
-  if (!pathname || !FOOTER_PATHS.includes(pathname)) return null;
+  if (!pathname || !showOnPath(pathname)) return null;
 
   const loginHref = `/host?next=${encodeURIComponent(pathname)}`;
 
@@ -22,7 +35,7 @@ export function HostFooterLink() {
     return (
       <div className="flex items-center justify-center gap-5">
         <Link
-          href="/menu"
+          href="/admin"
           className="font-mono text-xs tracking-widest uppercase text-ink-400 hover:text-ink-900"
         >
           admin

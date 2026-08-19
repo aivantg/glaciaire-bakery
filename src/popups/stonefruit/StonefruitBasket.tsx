@@ -26,10 +26,7 @@ type BasketFruit = FruitSlot & { src: string };
 const DECORATOR_FILES = [
   "apricots.png",
   "cherries.png",
-  "coconut.png",
   "lychees.png",
-  "mango-coconut.png",
-  "mango.png",
   "peaches.png",
   "plums.png",
 ];

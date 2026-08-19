@@ -43,14 +43,29 @@ export function StonefruitSkyFit() {
       return Math.max(0, Math.min(preHill, Math.max(flatSky, pinMeadowToBottom)));
     }
 
+    /** Content height only — ignore flex-grown empty sky below the queue/menu. */
+    function measureStageContentH() {
+      if (!stage) return 0;
+      const header = stage.querySelector("header");
+      const main = stage.querySelector("main");
+      if (header && main) {
+        return (
+          header.getBoundingClientRect().height +
+          main.getBoundingClientRect().height +
+          6
+        );
+      }
+      return stage.getBoundingClientRect().height;
+    }
+
     function relock() {
       if (!root || !stage) return;
-      const stageH = stage.getBoundingClientRect().height;
+      const stageH = measureStageContentH();
       const vw = root.getBoundingClientRect().width || window.innerWidth;
       const vh = window.innerHeight;
       const groundH = vw * GROUND_ASPECT;
       const cloudUnder = measureCloudUnder(stageH, groundH, vh);
-      // Fill the viewport; extra height stays in the sky stage, not the meadow.
+      // Fill the viewport; extra height stays as sky above the meadow.
       const totalH = Math.max(vh, stageH - cloudUnder + groundH);
 
       lock = {
@@ -74,7 +89,7 @@ export function StonefruitSkyFit() {
         return;
       }
 
-      const stageH = stage.getBoundingClientRect().height;
+      const stageH = measureStageContentH();
       const delta = stageH - lock.baseStageH;
       const cloudUnder = Math.max(
         0,
@@ -97,6 +112,8 @@ export function StonefruitSkyFit() {
 
     const ro = new ResizeObserver(() => absorbStageGrowth());
     ro.observe(stage);
+    const main = stage.querySelector("main");
+    if (main) ro.observe(main);
 
     const onResize = () => relock();
     window.addEventListener("resize", onResize);
@@ -107,6 +124,7 @@ export function StonefruitSkyFit() {
       root.style.removeProperty("--sf-fit-height");
       root.style.removeProperty("--sf-cloud-under");
       root.style.removeProperty("--sf-ground-pane");
+      root.style.removeProperty("--sf-queue-pad-top");
     };
   }, []);
 

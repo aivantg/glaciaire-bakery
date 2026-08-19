@@ -41,8 +41,8 @@ export function QueueToolbar({
       </div>
       <div className="flex items-center gap-2 font-sans text-xs tracking-widest uppercase text-leaf-700 font-bold">
         <span className="relative flex h-2 w-2">
-          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-leaf-500 opacity-75"></span>
-          <span className="relative inline-flex rounded-full h-2 w-2 bg-leaf-500"></span>
+          <span className="sf-queue-live animate-ping absolute inline-flex h-full w-full rounded-full bg-leaf-500 opacity-75"></span>
+          <span className="sf-queue-live relative inline-flex h-2 w-2 rounded-full bg-leaf-500"></span>
         </span>
         live
       </div>

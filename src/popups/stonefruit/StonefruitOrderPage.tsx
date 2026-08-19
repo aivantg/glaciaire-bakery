@@ -143,8 +143,16 @@ export function StonefruitOrderPage({ slug, ordersPath }: PopupOrderPageProps) {
           role="dialog"
           aria-modal="true"
           aria-labelledby="sf-review-title"
+          onClick={() => {
+            if (page.submitting) return;
+            page.setStage("browse");
+            page.setSubmitError(null);
+          }}
         >
-          <div className="sf-modal-card">
+          <div
+            className="sf-modal-card"
+            onClick={(e) => e.stopPropagation()}
+          >
             <h2 id="sf-review-title" className="sf-display text-center text-4xl">
               review order
             </h2>

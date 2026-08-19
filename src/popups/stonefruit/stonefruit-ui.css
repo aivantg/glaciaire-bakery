@@ -131,6 +131,16 @@
   flex: 0 0 auto;
 }
 
+/* Queue matches the menu page: content stays at the top; leftover height
+   becomes sky below it so the meadow can sit on the viewport bottom. */
+.stonefruit-root:not(.stonefruit-root--ops):has(.sf-queue) .sf-stage {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  min-height: 0;
+}
+
 @media (min-width: 768px) and (min-height: 900px) {
   .stonefruit-root:not(.stonefruit-root--ops):has(.sf-lockup) .sf-stage {
     flex: 1 0 auto;
@@ -553,7 +563,7 @@
 
 .stonefruit-root .sf-queue .sf-ops-panel {
   color: #3d6a72;
-  padding-top: 0.15rem;
+  padding-top: 0.35rem;
 }
 
 .stonefruit-root .sf-queue .font-sans,
@@ -588,6 +598,14 @@
 
 .stonefruit-root .sf-queue .sf-ops-panel .bg-leaf-500 {
   background-color: #3d6a72;
+}
+
+.stonefruit-root .sf-queue .sf-ops-panel .sf-queue-live {
+  background-color: #4caf70;
+}
+
+.stonefruit-root .sf-queue .sf-ops-panel .sf-queue-toolbar {
+  border-bottom: 1px solid rgba(61, 106, 114, 0.14);
 }
 
 .stonefruit-root .sf-queue .sf-ops-panel .link-mono {

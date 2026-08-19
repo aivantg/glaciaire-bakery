@@ -12,7 +12,7 @@ import {
 import { useHostSession } from "@/hooks/useHostSession";
 
 const HOST_TAPS = 5;
-const TAP_RESET_MS = 2500;
+const TAP_RESET_MS = 2000;
 
 type FruitSlot = {
   left: string;
@@ -172,9 +172,10 @@ export function StonefruitBasket() {
   );
 
   const rustle = useCallback(() => {
-    if (reduced.current) return;
     const basket = basketRef.current;
-    if (!basket) return;
+    if (!basket || reduced.current) {
+      return Promise.resolve();
+    }
 
     const from = currentRotationDeg(basket);
     basket.getAnimations().forEach((a) => a.cancel());
@@ -194,7 +195,7 @@ export function StonefruitBasket() {
       ],
       { duration: 420, easing: "ease-in-out", fill: "forwards" }
     );
-    anim.finished
+    const done = anim.finished
       .then(() => {
         basket.style.transform = "";
       })
@@ -240,10 +241,12 @@ export function StonefruitBasket() {
           })
           .catch(() => {});
       });
+
+    return done;
   }, []);
 
   const handleClick = useCallback(() => {
-    rustle();
+    const shake = rustle();
 
     tapCount.current += 1;
     clearTimeout(tapTimer.current);
@@ -251,9 +254,12 @@ export function StonefruitBasket() {
     if (tapCount.current >= HOST_TAPS) {
       tapCount.current = 0;
       const next = pathname || "/stonefruit";
-      router.push(
-        authenticated ? "/admin" : `/host?next=${encodeURIComponent(next)}`
-      );
+      const href = authenticated
+        ? "/admin"
+        : `/host?next=${encodeURIComponent(next)}`;
+      void shake.then(() => {
+        router.push(href);
+      });
       return;
     }
 

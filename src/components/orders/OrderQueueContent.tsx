@@ -221,7 +221,7 @@ export function OrderQueueContent({
   const themed = slug === "stonefruit";
 
   return (
-    <div className={themed ? "sf-queue pt-2" : "pt-6"}>
+    <div className={themed ? "sf-queue pt-8 sm:pt-10" : "pt-6"}>
       <h1
         className={
           themed
@@ -238,7 +238,9 @@ export function OrderQueueContent({
         filter={filter}
         counts={counts}
         onFilterChange={setFilter}
-        className={themed ? "mt-0 pt-1 pb-2" : undefined}
+        className={
+          themed ? "sf-queue-toolbar mt-0 pt-3 pb-3" : undefined
+        }
       />
 
       {filter === "finished" && authenticated && (

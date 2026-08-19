@@ -104,9 +104,9 @@ export function HostLoginForm() {
   return (
     <form
       onSubmit={handleSubmit}
-      className="mt-10 w-full max-w-xs flex flex-col items-center gap-5"
+      className="sf-ops-panel w-full max-w-sm flex flex-col items-center gap-5"
     >
-      <label className="sf-lazy text-xs tracking-widest uppercase text-white/85">
+      <label className="sf-lazy text-xs tracking-widest uppercase">
         enter pin
       </label>
       <input
@@ -127,7 +127,7 @@ export function HostLoginForm() {
         aria-label="Host PIN"
       />
 
-      {error && <p className="sf-lazy text-red-100 text-sm">{error}</p>}
+      {error && <p className="sf-lazy text-sm text-red-700">{error}</p>}
 
       <button
         type="submit"

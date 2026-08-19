@@ -15,15 +15,13 @@ export function StonefruitOrderPage({ slug, ordersPath }: PopupOrderPageProps) {
   const page = useOrderPage({ slug, ordersPath });
 
   return (
-    <div className="pt-4">
-      <div className="flex justify-center px-1">
-        <Image
-          src="/stonefruit/get-st-ned.png"
+    <>
+      <div className="sf-lockup">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/stonefruit/get-stoned.png"
           alt="Get Stoned"
-          width={900}
-          height={546}
-          className="h-auto w-full max-w-[18rem] sm:max-w-[22rem] drop-shadow-[0_3px_0_rgba(90,120,130,0.18)]"
-          priority
+          className="sf-lockup-img"
         />
       </div>
 
@@ -54,40 +52,40 @@ export function StonefruitOrderPage({ slug, ordersPath }: PopupOrderPageProps) {
                           className="sf-fruit-icon"
                         />
                       ) : null}
-                      <div className="sf-item-main">
-                        <div className="sf-item-top">
-                          <div className="sf-item-copy">
-                            <div className="sf-item-name">{item.name}</div>
-                            {item.description ? (
-                              <div className="sf-item-desc">
-                                {item.description}
-                              </div>
-                            ) : null}
-                          </div>
+                      <div className="sf-item-body">
+                        <div className="sf-item-headline">
+                          <div className="sf-item-name">{item.name}</div>
                           <div className="sf-item-actions">
                             <div className="sf-item-price">
                               ${formatPrice(item.price)}
                             </div>
-                            <button
-                              type="button"
-                              className="sf-counter-btn"
-                              onClick={() => page.removeMostRecent(item)}
-                              disabled={qty === 0}
-                              aria-label={`Remove ${item.name}`}
-                            >
-                              −
-                            </button>
-                            <span className="sf-qty">{qty}</span>
-                            <button
-                              type="button"
-                              className="sf-counter-btn"
-                              onClick={() => page.addOne(item, addonIds)}
-                              aria-label={`Add ${item.name}`}
-                            >
-                              +
-                            </button>
+                            <div className="sf-item-counter">
+                              <button
+                                type="button"
+                                className="sf-counter-btn"
+                                onClick={() => page.removeMostRecent(item)}
+                                disabled={qty === 0}
+                                aria-label={`Remove ${item.name}`}
+                              >
+                                −
+                              </button>
+                              <span className="sf-qty">{qty}</span>
+                              <button
+                                type="button"
+                                className="sf-counter-btn"
+                                onClick={() => page.addOne(item, addonIds)}
+                                aria-label={`Add ${item.name}`}
+                              >
+                                +
+                              </button>
+                            </div>
                           </div>
                         </div>
+                        {item.description ? (
+                          <div className="sf-item-desc">
+                            {item.description}
+                          </div>
+                        ) : null}
                         {addons.length > 0 && (
                           <div className="sf-item-addons">
                             {addons.map((addon) => {
@@ -100,7 +98,10 @@ export function StonefruitOrderPage({ slug, ordersPath }: PopupOrderPageProps) {
                                   className="sf-addon-chip"
                                   aria-pressed={selected}
                                   onClick={() =>
-                                    page.toggleAddonSelection(item.id, addon.id)
+                                    page.toggleAddonSelection(
+                                      item.id,
+                                      addon.id,
+                                    )
                                   }
                                 >
                                   {addon.name}
@@ -117,21 +118,6 @@ export function StonefruitOrderPage({ slug, ordersPath }: PopupOrderPageProps) {
               })}
             </ul>
           </div>
-
-          {page.totalCount > 0 && (
-            <div className="sf-ops-panel sf-name-panel mt-6">
-              <label className="block text-center text-sm tracking-wide uppercase">
-                your name
-                <input
-                  type="text"
-                  className="sf-name-input mt-1"
-                  value={page.customerName}
-                  onChange={(e) => page.setCustomerName(e.target.value)}
-                  required
-                />
-              </label>
-            </div>
-          )}
 
           {page.submitError && (
             <p className="mt-4 text-center text-red-700">{page.submitError}</p>
@@ -162,9 +148,20 @@ export function StonefruitOrderPage({ slug, ordersPath }: PopupOrderPageProps) {
             <h2 id="sf-review-title" className="sf-display text-center text-4xl">
               review order
             </h2>
-            <p className="mt-2 text-center sf-modal-kicker">
-              for {page.trimmedName}
-            </p>
+            <label className="sf-name-panel mt-4 block text-center text-sm tracking-wide uppercase">
+              your name
+              <input
+                type="text"
+                className="sf-name-input mt-1"
+                value={page.customerName}
+                onChange={(e) => {
+                  page.setCustomerName(e.target.value);
+                  page.setSubmitError(null);
+                }}
+                autoFocus
+                required
+              />
+            </label>
             <ul className="sf-modal-divider mt-4">
               {page.cartItems.map(({ menuItem, quantity, addonIds }) => {
                 const unit = lineUnitPrice(menuItem, addonIds);
@@ -190,7 +187,9 @@ export function StonefruitOrderPage({ slug, ordersPath }: PopupOrderPageProps) {
               <span>${formatPrice(page.total)}</span>
             </p>
             {page.submitError && (
-              <p className="mt-3 text-center text-red-700">{page.submitError}</p>
+              <p className="mt-3 text-center text-[#d4a017]">
+                {page.submitError}
+              </p>
             )}
             <div className="mt-5 flex flex-col items-center gap-2">
               <button
@@ -254,6 +253,6 @@ export function StonefruitOrderPage({ slug, ordersPath }: PopupOrderPageProps) {
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 }

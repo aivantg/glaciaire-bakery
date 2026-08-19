@@ -13,9 +13,11 @@ import {
 export function ReadyCalloutRow({
   order,
   orderNumber,
+  statusPalette = "default",
 }: {
   order: Order;
   orderNumber: number;
+  statusPalette?: "default" | "stonefruit";
 }) {
   const [open, setOpen] = useState(false);
   const count = orderItemCount(order);
@@ -41,7 +43,7 @@ export function ReadyCalloutRow({
         </div>
         <span
           className="status-text shrink-0"
-          style={{ color: statusColor("done") }}
+          style={{ color: statusColor("done", statusPalette) }}
         >
           {STATUS_LABELS.done}
         </span>

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { isReservedSlug } from "@/lib/popups";
+import { popupIconMetadata } from "@/lib/popup-favicon";
 import { getPopupBySlug } from "@/lib/store";
 import { PopupOrderApp } from "@/popups/PopupOrderApp";
 
@@ -16,6 +17,7 @@ export async function generateMetadata({
   return {
     title: popup?.name ?? "Bakery",
     description: "Pastry + cafe pop-up",
+    icons: popupIconMetadata(popup?.slug ?? slug),
   };
 }
 

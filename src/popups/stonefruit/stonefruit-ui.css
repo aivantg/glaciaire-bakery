@@ -15,7 +15,7 @@
 }
 
 .stonefruit-root {
-  --sf-sky: #bae4e8;
+  --sf-sky: #b8e3e7;
   --sf-ink: #3d5a3a;
   --sf-white: #ffffff;
   --sf-soft: rgba(255, 255, 255, 0.78);
@@ -27,10 +27,15 @@
   font-family: var(--font-lazydog), "Lazydog", system-ui, sans-serif;
   font-size: 1.05rem;
   line-height: 1.3;
+  /* Tall page so you scroll sky before the meadow / basket. */
   min-height: 100dvh;
   -webkit-font-smoothing: antialiased;
   position: relative;
   overflow-x: hidden;
+}
+
+.stonefruit-root:not(.stonefruit-root--ops) {
+  min-height: var(--sf-fit-height, 100dvh);
 }
 
 .stonefruit-root .sf-display {
@@ -66,22 +71,82 @@
   background: rgba(255, 255, 255, 0.2);
 }
 
+.stonefruit-root .sf-stage {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  flex: 0 0 auto;
+  width: 100%;
+  padding-bottom: 0.35rem;
+}
+
+.stonefruit-root .sf-stage > header {
+  position: relative;
+  z-index: 20;
+}
+
+.stonefruit-root .sf-stage > main {
+  position: relative;
+  z-index: 10;
+}
+
+.stonefruit-root .sf-lockup {
+  display: flex;
+  justify-content: center;
+  padding-top: 0.4rem;
+}
+
+.stonefruit-root .sf-lockup-img {
+  width: 100%;
+  height: auto;
+  max-width: 22rem;
+  filter: drop-shadow(0 3px 0 rgba(90, 120, 130, 0.18));
+}
+
+@media (min-width: 480px) {
+  .stonefruit-root .sf-lockup {
+    padding-top: 0;
+    margin-top: -3.1rem;
+  }
+
+  .stonefruit-root .sf-lockup-img {
+    max-width: 26rem;
+  }
+}
+
+@media (min-width: 768px) {
+  .stonefruit-root .sf-lockup {
+    margin-top: -3.4rem;
+  }
+
+  .stonefruit-root .sf-lockup-img {
+    max-width: 28rem;
+  }
+}
+
 .stonefruit-root .sf-ground {
   position: relative;
+  z-index: 0;
   width: 100%;
-  height: clamp(140px, 28vw, 220px);
-  margin-top: auto;
+  margin-top: calc(-1 * var(--sf-cloud-under, 0px));
+  flex: 1 0 auto;
+  min-height: calc(100vw * 840 / 1164);
+  /* If the block grows taller than the art, meadow green continues below it. */
+  background-color: #8ba85c;
   background-image: url("/stonefruit/background_base.png");
-  background-size: cover;
-  background-position: center bottom;
+  background-size: 100% auto;
+  background-position: center top;
   background-repeat: no-repeat;
-  flex-shrink: 0;
+}
+
+.stonefruit-root.stonefruit-root--ops .sf-ground {
+  margin-top: auto;
 }
 
 .stonefruit-root .sf-ground-footer {
   position: absolute;
   left: 50%;
-  bottom: 1rem;
+  bottom: max(0.65rem, env(safe-area-inset-bottom, 0px));
   transform: translateX(-50%);
   z-index: 3;
   display: flex;
@@ -115,6 +180,11 @@
   color: #3d6a72;
 }
 
+.stonefruit-root .sf-ops-panel .sf-btn-primary {
+  background: #3d6a72;
+  color: #fff;
+}
+
 .stonefruit-root .sf-menu-list {
   display: flex;
   flex-direction: column;
@@ -123,29 +193,23 @@
 
 .stonefruit-root .sf-menu-list > * + * {
   border-top: 1px solid rgba(61, 106, 114, 0.14);
-  margin-top: 0.85rem;
-  padding-top: 0.85rem;
+  margin-top: 0.45rem;
+  padding-top: 0.45rem;
 }
 
 .stonefruit-root .sf-menu-row {
   display: flex;
-  align-items: flex-start;
-  gap: 0.7rem;
+  align-items: center;
+  gap: 0.55rem;
 }
 
 .stonefruit-root .sf-fruit-icon {
-  width: 2.6rem;
-  height: 2.6rem;
+  width: 3.9rem;
+  height: 2.2rem;
   object-fit: contain;
+  object-position: center;
   flex-shrink: 0;
   filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.12));
-}
-
-@media (min-width: 480px) {
-  .stonefruit-root .sf-fruit-icon {
-    width: 3.1rem;
-    height: 3.1rem;
-  }
 }
 
 .stonefruit-root .sf-fruit-icon--sm {
@@ -153,63 +217,93 @@
   height: 2rem;
 }
 
-.stonefruit-root .sf-item-main {
+.stonefruit-root .sf-item-body {
   min-width: 0;
   flex: 1;
 }
 
-.stonefruit-root .sf-item-top {
+.stonefruit-root .sf-item-headline {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
-  gap: 1rem;
-}
-
-.stonefruit-root .sf-item-copy {
-  min-width: 0;
-  flex: 1 1 70%;
-  max-width: 70%;
+  gap: 0.75rem;
 }
 
 .stonefruit-root .sf-item-name {
   font-family: var(--font-lazydog), "Lazydog", system-ui, sans-serif;
-  font-size: 1.125rem;
+  font-size: 1.05rem;
   font-weight: 800;
   color: #3d6a72;
   line-height: 1.15;
+  min-width: 0;
+  flex: 1;
 }
 
 .stonefruit-root .sf-item-desc {
   font-family: var(--font-nunito), Nunito, system-ui, sans-serif;
-  font-size: 0.875rem;
+  font-size: 0.75rem;
   font-weight: 400;
   color: rgba(61, 106, 114, 0.7);
-  margin-top: 0.2rem;
-  line-height: 1.35;
+  margin-top: 0.15rem;
+  line-height: 1.3;
   letter-spacing: -0.01em;
 }
 
 .stonefruit-root .sf-item-actions {
   display: flex;
-  align-items: center;
-  gap: 0.35rem;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.2rem;
   flex-shrink: 0;
 }
 
 .stonefruit-root .sf-item-price {
   font-family: var(--font-lazydog), "Lazydog", system-ui, sans-serif;
-  font-size: 1rem;
+  font-size: 0.95rem;
   font-weight: 600;
   color: #3d6a72;
   line-height: 1;
-  margin-right: 0.15rem;
+}
+
+.stonefruit-root .sf-item-counter {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
 }
 
 .stonefruit-root .sf-item-addons {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.4rem;
-  margin-top: 0.55rem;
+  gap: 0.35rem;
+  margin-top: 0.4rem;
+}
+
+@media (min-width: 480px) {
+  .stonefruit-root .sf-fruit-icon {
+    width: 4.6rem;
+    height: 2.6rem;
+  }
+
+  .stonefruit-root .sf-item-name {
+    font-size: 1.125rem;
+  }
+
+  .stonefruit-root .sf-item-desc {
+    font-size: 0.875rem;
+    line-height: 1.35;
+    margin-top: 0.2rem;
+  }
+
+  .stonefruit-root .sf-item-actions {
+    flex-direction: row;
+    align-items: center;
+    gap: 0.35rem;
+  }
+
+  .stonefruit-root .sf-item-price {
+    font-size: 1rem;
+    margin-right: 0.15rem;
+  }
 }
 
 .stonefruit-root .sf-addon-chip {
@@ -360,9 +454,9 @@
 
 .stonefruit-root .sf-basket {
   position: absolute;
-  right: 1.5rem;
-  bottom: 1.4rem;
-  width: min(48vw, 200px);
+  right: 1.25rem;
+  bottom: max(0.65rem, env(safe-area-inset-bottom, 0px));
+  width: min(38vw, 180px);
   padding: 0;
   border: none;
   background: transparent;
@@ -375,7 +469,7 @@
 
 .stonefruit-root .sf-basket-img {
   position: relative;
-  z-index: 3;
+  z-index: 1;
   display: block;
   width: 100%;
   height: auto;
@@ -387,7 +481,24 @@
   position: absolute;
   inset: 0;
   pointer-events: none;
-  z-index: 4;
+  z-index: 2;
+}
+
+/* Same basket PNG, clipped to the front wall so fruit sits in the opening. */
+.stonefruit-root .sf-basket-front {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+  clip-path: inset(34% 0 0 0);
+}
+
+.stonefruit-root .sf-basket-front .sf-basket-img {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: auto;
+  filter: none;
 }
 
 .stonefruit-root .sf-basket-fruit {

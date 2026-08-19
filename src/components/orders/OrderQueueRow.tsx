@@ -20,6 +20,7 @@ type OrderQueueRowProps = {
   authenticated: boolean;
   updating: string | null;
   confirm: ReturnType<typeof useConfirmAction>;
+  statusPalette?: "default" | "stonefruit";
   onAdvanceStatus: (order: Order) => void;
   onSetArchived: (orderId: string, archived: boolean) => void | Promise<void>;
   onDeleteOrder: (orderId: string) => void | Promise<void>;
@@ -32,6 +33,7 @@ export function OrderQueueRow({
   authenticated,
   updating,
   confirm,
+  statusPalette = "default",
   onAdvanceStatus,
   onSetArchived,
   onDeleteOrder,
@@ -99,7 +101,9 @@ export function OrderQueueRow({
         <span
           className="status-text"
           style={{
-            color: isArchived ? ARCHIVED_STATUS_COLOR : statusColor(order.status),
+            color: isArchived
+              ? ARCHIVED_STATUS_COLOR
+              : statusColor(order.status, statusPalette),
           }}
         >
           {isArchived ? "archived" : STATUS_LABELS[order.status]}

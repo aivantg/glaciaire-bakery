@@ -36,9 +36,9 @@ const DECORATOR_FILES = [
 
 const SLOTS: FruitSlot[] = [
   {
-    left: "14%",
+    left: "16%",
     top: "10%",
-    width: "42%",
+    width: "34%",
     z: 4,
     rot: "-12deg",
     delay: "0ms",
@@ -48,8 +48,8 @@ const SLOTS: FruitSlot[] = [
   },
   {
     left: "34%",
-    top: "8%",
-    width: "46%",
+    top: "7%",
+    width: "36%",
     z: 5,
     rot: "8deg",
     delay: "30ms",
@@ -58,9 +58,9 @@ const SLOTS: FruitSlot[] = [
     jr: "6deg",
   },
   {
-    left: "20%",
-    top: "30%",
-    width: "50%",
+    left: "22%",
+    top: "16%",
+    width: "38%",
     z: 6,
     rot: "4deg",
     delay: "20ms",
@@ -69,9 +69,9 @@ const SLOTS: FruitSlot[] = [
     jr: "-5deg",
   },
   {
-    left: "50%",
-    top: "16%",
-    width: "34%",
+    left: "48%",
+    top: "12%",
+    width: "30%",
     z: 7,
     rot: "14deg",
     delay: "50ms",
@@ -169,6 +169,16 @@ export function StonefruitBasket() {
         {fruits.map((fruit) => (
           <Fruit key={fruit.src} fruit={fruit} />
         ))}
+      </span>
+      <span className="sf-basket-front" aria-hidden>
+        <Image
+          src="/stonefruit/basket.png"
+          alt=""
+          width={220}
+          height={220}
+          className="sf-basket-img"
+          draggable={false}
+        />
       </span>
     </button>
   );

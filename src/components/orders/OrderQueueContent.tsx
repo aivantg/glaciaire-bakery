@@ -275,6 +275,7 @@ export function OrderQueueContent({
               key={order.id}
               order={order}
               orderNumber={orderNumbers[order.id]}
+              statusPalette={themed ? "stonefruit" : "default"}
             />
           ))}
           {filteredOrders.map((order) => (
@@ -286,6 +287,7 @@ export function OrderQueueContent({
               authenticated={authenticated === true}
               updating={updating}
               confirm={confirm}
+              statusPalette={themed ? "stonefruit" : "default"}
               onAdvanceStatus={advanceStatus}
               onSetArchived={setOrderArchived}
               onDeleteOrder={deleteOrder}

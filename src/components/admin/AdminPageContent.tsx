@@ -347,7 +347,7 @@ export function AdminPageContent({ initialSlug }: { initialSlug?: string }) {
 
   if (authenticated !== true) {
     return (
-      <HostShell title="Admin">
+      <HostShell>
         <p className="text-white">Checking access…</p>
       </HostShell>
     );
@@ -356,7 +356,7 @@ export function AdminPageContent({ initialSlug }: { initialSlug?: string }) {
   const selected = popups.find((p) => p.slug === selectedSlug);
 
   return (
-    <HostShell title="Admin">
+    <HostShell>
       <h1 className="text-5xl sm:text-6xl">popups</h1>
       <p className="mt-2 text-white/85">
         Choose a popup to edit its menu. Mark one as the homepage.

@@ -140,15 +140,15 @@ export function useOrderPage({
       setSubmitError("Add at least one item to your order.");
       return;
     }
-    if (!trimmedName) {
-      setSubmitError("Please tell us your name.");
-      return;
-    }
     setStage("review");
   }
 
   async function placeOrder() {
     setSubmitError(null);
+    if (!trimmedName) {
+      setSubmitError("Please tell us your name.");
+      return;
+    }
     setSubmitting(true);
     try {
       const res = await fetch(`${popupApiBase(slug)}/orders`, {

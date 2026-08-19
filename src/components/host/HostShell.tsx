@@ -6,10 +6,11 @@ import "@/popups/stonefruit/stonefruit-ui.css";
 
 export function HostShell({
   children,
-  title,
+  center = false,
 }: {
   children: ReactNode;
-  title?: string;
+  /** Vertically center main content (host login). */
+  center?: boolean;
 }) {
   return (
     <div
@@ -29,14 +30,15 @@ export function HostShell({
             />
           </span>
         </Link>
-        {title ? (
-          <span className="sf-lazy text-sm text-white/80">{title}</span>
-        ) : null}
         <Link href="/" className="sf-nav-pill">
           home
         </Link>
       </header>
-      <main className="relative z-10 mx-auto max-w-3xl flex-1 px-5 py-6">
+      <main
+        className={`relative z-10 mx-auto flex w-full max-w-3xl flex-1 flex-col px-5 py-6 ${
+          center ? "items-center justify-center" : ""
+        }`}
+      >
         {children}
       </main>
       <div className="sf-ground" aria-hidden />

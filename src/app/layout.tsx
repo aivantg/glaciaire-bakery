@@ -1,10 +1,18 @@
 import type { Metadata, Viewport } from "next";
+import { getActivePopup } from "@/lib/store";
+import { popupIconMetadata } from "@/lib/popup-favicon";
 import "./globals.css";
 
-export const metadata: Metadata = {
-  title: "Bakery",
-  description: "Pastry + cafe pop-up",
-};
+export const dynamic = "force-dynamic";
+
+export async function generateMetadata(): Promise<Metadata> {
+  const popup = await getActivePopup();
+  return {
+    title: popup?.name ?? "Bakery",
+    description: "Pastry + cafe pop-up",
+    icons: popupIconMetadata(popup?.slug),
+  };
+}
 
 export const viewport: Viewport = {
   width: "device-width",

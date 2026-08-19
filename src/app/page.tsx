@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { getActivePopup } from "@/lib/store";
-import { popupIconMetadata } from "@/lib/popup-favicon";
+import { popupIconMetadata, popupTabTitle } from "@/lib/popup-favicon";
 import { PopupOrderApp } from "@/popups/PopupOrderApp";
 
 export const dynamic = "force-dynamic";
@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 export async function generateMetadata(): Promise<Metadata> {
   const popup = await getActivePopup();
   return {
-    title: popup?.name ?? "Bakery",
+    title: popupTabTitle(popup?.slug, popup?.name),
     description: "Pastry + cafe pop-up",
     icons: popupIconMetadata(popup?.slug),
   };

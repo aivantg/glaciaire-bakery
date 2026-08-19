@@ -8,8 +8,21 @@ const ICONS: Record<string, { rel: string; type: string }> = {
   passion: { rel: "popups/passion/favicon.jpg", type: "image/jpeg" },
 };
 
+const TAB_TITLES: Record<string, string> = {
+  stonefruit: "Get Stoned",
+};
+
 function iconForSlug(slug: string | null | undefined) {
   return ICONS[slug ?? ""] ?? ICONS.passion;
+}
+
+/** Browser tab title; popups can override their stored display name. */
+export function popupTabTitle(
+  slug: string | null | undefined,
+  name: string | null | undefined
+): string {
+  if (slug && TAB_TITLES[slug]) return TAB_TITLES[slug];
+  return name ?? "Bakery";
 }
 
 export function popupIconMetadata(

@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { customerPath, isReservedSlug } from "@/lib/popups";
 import { getPopupBySlug } from "@/lib/store";
 import { OrderQueueContent } from "@/components/orders/OrderQueueContent";
+import { getPopupUI } from "@/popups/registry";
 
 export const dynamic = "force-dynamic";
 
@@ -13,11 +14,14 @@ export default async function PopupOrdersPage({ params }: Context) {
   const popup = await getPopupBySlug(slug);
   if (!popup) notFound();
 
+  const { Layout } = getPopupUI(popup.slug);
+
   return (
-    <OrderQueueContent
-      slug={popup.slug}
-      popupName={popup.name}
-      menuPath={customerPath(popup.slug, false)}
-    />
+    <Layout slug={popup.slug} isHome={false}>
+      <OrderQueueContent
+        slug={popup.slug}
+        menuPath={customerPath(popup.slug, false)}
+      />
+    </Layout>
   );
 }

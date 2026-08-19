@@ -17,6 +17,7 @@ export interface MenuItemFormState {
   price: string;
   available: boolean;
   category: MenuCategory;
+  decorator: string;
   addons: AddonFormRow[];
 }
 
@@ -26,6 +27,7 @@ export const EMPTY_MENU_FORM: MenuItemFormState = {
   price: "",
   available: true,
   category: "pastries",
+  decorator: "",
   addons: [],
 };
 
@@ -35,6 +37,7 @@ export function menuItemToFormState(item: {
   price: number;
   available: boolean;
   category: MenuCategory;
+  decorator?: string | null;
   addons: { name: string; price: number | null; available: boolean }[];
 }): MenuItemFormState {
   return {
@@ -43,6 +46,7 @@ export function menuItemToFormState(item: {
     price: formatPrice(item.price),
     available: item.available,
     category: item.category,
+    decorator: item.decorator ?? "",
     addons: item.addons.map((a) => ({
       name: a.name,
       price: a.price != null && a.price > 0 ? formatPrice(a.price) : "",

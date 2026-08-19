@@ -4,6 +4,7 @@ import { PassionOrderPage } from "./passion/PassionOrderPage";
 import { TemplateLayout } from "./template/TemplateLayout";
 import { TemplateOrderPage } from "./template/TemplateOrderPage";
 import { StonefruitLayout } from "./stonefruit/StonefruitLayout";
+import { StonefruitOrderPage } from "./stonefruit/StonefruitOrderPage";
 import type { PopupLayoutProps, PopupOrderPageProps } from "./types";
 
 export type PopupUI = {
@@ -23,7 +24,7 @@ export const POPUP_UIS: Record<string, PopupUI> = {
   },
   stonefruit: {
     Layout: StonefruitLayout,
-    OrderPage: TemplateOrderPage,
+    OrderPage: StonefruitOrderPage,
   },
 };
 

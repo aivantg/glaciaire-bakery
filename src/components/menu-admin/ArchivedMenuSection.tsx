@@ -3,10 +3,12 @@
 import type { MenuItem } from "@/lib/store";
 import { AdminMenuItemRow } from "@/components/menu-admin/AdminMenuItemRow";
 import type { useConfirmAction } from "@/hooks/useConfirmAction";
+import type { PopupDecorator } from "@/lib/decorator-src";
 
 type ArchivedMenuSectionProps = {
   items: MenuItem[];
   orderCounts: Record<string, number>;
+  decorators?: PopupDecorator[];
   unarchiving: string | null;
   confirm: ReturnType<typeof useConfirmAction>;
   onUnarchive: (id: string) => void;
@@ -15,6 +17,7 @@ type ArchivedMenuSectionProps = {
 export function ArchivedMenuSection({
   items,
   orderCounts,
+  decorators = [],
   unarchiving,
   confirm,
   onUnarchive,
@@ -34,6 +37,9 @@ export function ArchivedMenuSection({
           <AdminMenuItemRow
             key={item.id}
             item={item}
+            decoratorSrc={
+              decorators.find((d) => d.id === item.decorator)?.src ?? null
+            }
             orderCount={orderCounts[item.id] ?? 0}
             dimmed
             archiveAction={{

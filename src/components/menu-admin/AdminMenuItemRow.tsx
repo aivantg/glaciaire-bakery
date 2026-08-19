@@ -10,6 +10,7 @@ import type { useConfirmAction } from "@/hooks/useConfirmAction";
 type AdminMenuItemRowProps = {
   item: MenuItem;
   orderCount: number;
+  decoratorSrc?: string | null;
   dimmed?: boolean;
   onToggleAvailable?: (item: MenuItem) => void;
   onEdit?: (item: MenuItem) => void;
@@ -25,6 +26,7 @@ type AdminMenuItemRowProps = {
 export function AdminMenuItemRow({
   item,
   orderCount,
+  decoratorSrc,
   dimmed = false,
   onToggleAvailable,
   onEdit,
@@ -36,6 +38,14 @@ export function AdminMenuItemRow({
         dimmed || !item.available ? "opacity-50" : ""
       }`}
     >
+      {decoratorSrc ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={decoratorSrc}
+          alt=""
+          className="h-10 w-10 object-contain shrink-0"
+        />
+      ) : null}
       <div className="min-w-0 flex-1 basis-full sm:basis-auto">
         <div className="flex items-baseline gap-2 flex-wrap">
           <span className="font-sans font-extrabold text-lg text-ink-900 break-words">
@@ -69,7 +79,7 @@ export function AdminMenuItemRow({
             <button
               type="button"
               onClick={() => onToggleAvailable(item)}
-              className="link-mono text-leaf-700"
+              className="link-mono text-ink-600"
             >
               {item.available ? "disable" : "enable"}
             </button>

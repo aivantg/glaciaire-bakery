@@ -44,6 +44,7 @@ export interface MenuItem {
   available: boolean;
   archived: boolean;
   category: MenuCategory;
+  decorator: string | null;
   createdAt: string;
   addons: MenuItemAddon[];
 }
@@ -93,6 +94,7 @@ type MenuItemRow = {
   available: boolean;
   archived: boolean;
   category: PrismaMenuCategory;
+  decorator: string | null;
   createdAt: Date;
   addons: {
     id: string;
@@ -149,6 +151,7 @@ function serializeMenuItem(row: MenuItemRow): MenuItem {
     available: row.available,
     archived: row.archived,
     category: row.category,
+    decorator: row.decorator,
     createdAt: row.createdAt.toISOString(),
     addons: row.addons.map((a) => ({
       id: a.id,
@@ -282,6 +285,7 @@ export async function createMenuItem(
       price: data.price,
       available: data.available,
       category: data.category,
+      decorator: data.decorator,
       addons: addonRows.length ? { create: addonRows } : undefined,
     },
     include: menuInclude,

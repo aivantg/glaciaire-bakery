@@ -7,6 +7,7 @@ import {
 } from "@/lib/store";
 import { isHostAuthenticatedRequest } from "@/lib/host-session";
 import { parseAddons, VALID_CATEGORIES } from "@/lib/menu-parse";
+import { isAllowedDecorator } from "@/lib/decorators";
 import { resolvePopup } from "@/lib/popup-route";
 
 type Context = { params: Promise<{ slug: string; id: string }> };
@@ -32,7 +33,7 @@ export async function PUT(request: NextRequest, { params }: Context) {
   if ("error" in resolved) return resolved.error;
 
   const body = await request.json();
-  const { name, description, price, available, category, addons, archived } =
+  const { name, description, price, available, category, addons, archived, decorator } =
     body;
 
   if (archived === false) {
@@ -77,6 +78,19 @@ export async function PUT(request: NextRequest, { params }: Context) {
   }
   if (addons !== undefined) {
     updates.addons = parseAddons(addons) ?? [];
+  }
+  if (decorator !== undefined) {
+    if (decorator === null || decorator === "") {
+      updates.decorator = null;
+    } else if (typeof decorator === "string") {
+      if (!isAllowedDecorator(resolved.popup.slug, decorator)) {
+        return NextResponse.json(
+          { error: "Unknown decorator" },
+          { status: 400 }
+        );
+      }
+      updates.decorator = decorator;
+    }
   }
 
   const updated = await updateMenuItem(resolved.popup.id, id, updates);

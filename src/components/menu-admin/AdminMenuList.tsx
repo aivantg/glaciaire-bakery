@@ -3,10 +3,12 @@
 import type { MenuItem } from "@/lib/store";
 import { AdminMenuItemRow } from "@/components/menu-admin/AdminMenuItemRow";
 import type { useConfirmAction } from "@/hooks/useConfirmAction";
+import type { PopupDecorator } from "@/lib/decorator-src";
 
 type AdminMenuListProps = {
   items: MenuItem[];
   orderCounts: Record<string, number>;
+  decorators?: PopupDecorator[];
   archiving: string | null;
   confirm: ReturnType<typeof useConfirmAction>;
   onToggleAvailable: (item: MenuItem) => void;
@@ -17,6 +19,7 @@ type AdminMenuListProps = {
 export function AdminMenuList({
   items,
   orderCounts,
+  decorators = [],
   archiving,
   confirm,
   onToggleAvailable,
@@ -29,6 +32,9 @@ export function AdminMenuList({
         <AdminMenuItemRow
           key={item.id}
           item={item}
+          decoratorSrc={
+            decorators.find((d) => d.id === item.decorator)?.src ?? null
+          }
           orderCount={orderCounts[item.id] ?? 0}
           onToggleAvailable={onToggleAvailable}
           onEdit={onEdit}

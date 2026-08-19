@@ -1,6 +1,7 @@
 "use client";
 
 import type { MenuCategory } from "@/lib/store";
+import type { PopupDecorator } from "@/lib/decorator-src";
 import {
   type AddonFormRow,
   type MenuItemFormState,
@@ -82,6 +83,7 @@ type MenuItemFormProps = {
   form: MenuItemFormState;
   formError: string | null;
   saving: boolean;
+  decorators: PopupDecorator[];
   onChange: (form: MenuItemFormState) => void;
   onAddAddonRow: () => void;
   onUpdateAddonRow: (index: number, patch: Partial<AddonFormRow>) => void;
@@ -95,6 +97,7 @@ export function MenuItemForm({
   form,
   formError,
   saving,
+  decorators,
   onChange,
   onAddAddonRow,
   onUpdateAddonRow,
@@ -150,6 +153,39 @@ export function MenuItemForm({
             className={underlineInputClass}
           />
         </div>
+        {decorators.length > 0 && (
+          <div>
+            <label className="block font-sans text-xs tracking-widest uppercase font-bold text-ink-600 mb-1">
+              decorator
+            </label>
+            <div className="flex items-center gap-3">
+              <select
+                value={form.decorator}
+                onChange={(e) =>
+                  onChange({ ...form, decorator: e.target.value })
+                }
+                className={underlineInputClass}
+              >
+                <option value="">none</option>
+                {decorators.map((d) => (
+                  <option key={d.id} value={d.id}>
+                    {d.label}
+                  </option>
+                ))}
+              </select>
+              {form.decorator && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={
+                    decorators.find((d) => d.id === form.decorator)?.src ?? ""
+                  }
+                  alt=""
+                  className="h-12 w-12 object-contain"
+                />
+              )}
+            </div>
+          </div>
+        )}
         <div>
           <label className="block font-sans text-xs tracking-widest uppercase font-bold text-ink-600 mb-2">
             category

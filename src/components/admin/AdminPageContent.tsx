@@ -12,6 +12,7 @@ import {
 import { useHostSession } from "@/hooks/useHostSession";
 import { useConfirmAction } from "@/hooks/useConfirmAction";
 import { popupApiBase } from "@/lib/popups";
+import type { PopupDecorator } from "@/lib/decorator-src";
 import { MenuItemForm } from "@/components/menu-admin/MenuItemForm";
 import { AdminMenuList } from "@/components/menu-admin/AdminMenuList";
 import { ArchivedMenuSection } from "@/components/menu-admin/ArchivedMenuSection";
@@ -19,6 +20,7 @@ import { HostShell } from "@/components/host/HostShell";
 import { LoadingState } from "@/components/shared/LoadingState";
 import { ErrorState } from "@/components/shared/ErrorState";
 import { EmptyState } from "@/components/shared/EmptyState";
+import "@/popups/passion/passion.css";
 
 const CONFIRM_MS = 3000;
 
@@ -33,6 +35,7 @@ export function AdminPageContent({ initialSlug }: { initialSlug?: string }) {
   const [items, setItems] = useState<MenuItem[]>([]);
   const [archivedItems, setArchivedItems] = useState<MenuItem[]>([]);
   const [orderCounts, setOrderCounts] = useState<Record<string, number>>({});
+  const [decorators, setDecorators] = useState<PopupDecorator[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -74,10 +77,11 @@ export function AdminPageContent({ initialSlug }: { initialSlug?: string }) {
     setError(null);
     try {
       const api = popupApiBase(slug);
-      const [activeRes, archivedRes, statsRes] = await Promise.all([
+      const [activeRes, archivedRes, statsRes, decoRes] = await Promise.all([
         fetch(`${api}/menu`),
         fetch(`${api}/menu/archived`),
         fetch(`${api}/menu/stats`),
+        fetch(`${api}/decorators`),
       ]);
       if (!activeRes.ok) throw new Error("Failed to load menu");
       setItems(await activeRes.json());
@@ -90,6 +94,11 @@ export function AdminPageContent({ initialSlug }: { initialSlug?: string }) {
         setOrderCounts(await statsRes.json());
       } else {
         setOrderCounts({});
+      }
+      if (decoRes.ok) {
+        setDecorators(await decoRes.json());
+      } else {
+        setDecorators([]);
       }
     } catch (e) {
       setError(e instanceof Error ? e.message : "Unknown error");
@@ -108,6 +117,10 @@ export function AdminPageContent({ initialSlug }: { initialSlug?: string }) {
 
   useEffect(() => {
     if (authenticated !== true || !selectedSlug) return;
+    setShowForm(false);
+    setEditingId(null);
+    setForm(EMPTY_MENU_FORM);
+    setFormError(null);
     fetchItems(selectedSlug);
   }, [authenticated, selectedSlug, fetchItems]);
 
@@ -203,6 +216,7 @@ export function AdminPageContent({ initialSlug }: { initialSlug?: string }) {
         price: parsePriceToCents(form.price),
         available: form.available,
         category: form.category,
+        decorator: form.decorator || null,
         addons: addonsPayload,
       };
 
@@ -304,7 +318,7 @@ export function AdminPageContent({ initialSlug }: { initialSlug?: string }) {
   if (authenticated !== true) {
     return (
       <HostShell title="Admin">
-        <p>Checking access…</p>
+        <p className="text-white">Checking access…</p>
       </HostShell>
     );
   }
@@ -313,8 +327,8 @@ export function AdminPageContent({ initialSlug }: { initialSlug?: string }) {
 
   return (
     <HostShell title="Admin">
-      <h1 className="text-2xl font-semibold">Popups</h1>
-      <p className="mt-1 text-sm text-neutral-600">
+      <h1 className="text-5xl sm:text-6xl">popups</h1>
+      <p className="mt-2 text-white/85">
         Choose a popup to edit its menu. Mark one as the homepage.
       </p>
 
@@ -330,8 +344,8 @@ export function AdminPageContent({ initialSlug }: { initialSlug?: string }) {
             }}
             className={
               popup.slug === selectedSlug
-                ? "border border-neutral-900 bg-neutral-900 text-white px-3 py-1"
-                : "border border-neutral-300 px-3 py-1"
+                ? "sf-btn-primary px-3 py-1"
+                : "sf-nav-pill"
             }
           >
             {popup.name}
@@ -341,30 +355,52 @@ export function AdminPageContent({ initialSlug }: { initialSlug?: string }) {
       </div>
 
       {selected && (
-        <div className="mt-4 flex flex-wrap items-center gap-3 text-sm">
+        <div className="mt-4 flex flex-wrap items-center gap-3 text-sm text-white/90">
           {selected.isActive ? (
             <span>This popup is on the homepage.</span>
           ) : (
             <button
               type="button"
+              className="sf-btn-ghost"
               onClick={() => makeHomepage(selected.slug)}
               disabled={settingActive}
             >
               {settingActive ? "Saving…" : "Set as homepage"}
             </button>
           )}
-          <a href={`/${selected.slug}`}>View site</a>
-          <a href={`/${selected.slug}/orders`}>View queue</a>
+          <a href={`/${selected.slug}`} className="sf-btn-ghost">
+            View site
+          </a>
+          <a href={`/${selected.slug}/orders`} className="sf-btn-ghost">
+            View queue
+          </a>
         </div>
       )}
 
-      <hr className="my-8" />
-
+      <div
+        className={`sf-ops-panel mt-8 ${
+          selectedSlug === "stonefruit"
+            ? "sf-ops-panel--stonefruit"
+            : selectedSlug === "passion"
+              ? "sf-ops-panel--passion"
+              : ""
+        }`}
+      >
       <div className="flex flex-wrap items-center justify-between gap-4">
-        <h2 className="text-xl font-semibold">
-          {selected ? `${selected.name} menu` : "Menu"}
-        </h2>
-        <button type="button" onClick={startAdd} disabled={!selectedSlug}>
+        <div>
+          {selected && (
+            <p className="font-sans text-xs tracking-widest uppercase font-bold opacity-70 mb-1">
+              {selected.name}
+            </p>
+          )}
+          <h2 className="sf-ops-menu-title text-4xl sm:text-5xl">menu</h2>
+        </div>
+        <button
+          type="button"
+          className="sf-btn-primary"
+          onClick={startAdd}
+          disabled={!selectedSlug}
+        >
           + add item
         </button>
       </div>
@@ -375,6 +411,7 @@ export function AdminPageContent({ initialSlug }: { initialSlug?: string }) {
           form={form}
           formError={formError}
           saving={saving}
+          decorators={decorators}
           onChange={setForm}
           onAddAddonRow={addAddonRow}
           onUpdateAddonRow={updateAddonRow}
@@ -397,6 +434,7 @@ export function AdminPageContent({ initialSlug }: { initialSlug?: string }) {
         <AdminMenuList
           items={items}
           orderCounts={orderCounts}
+          decorators={decorators}
           archiving={archiving}
           confirm={confirm}
           onToggleAvailable={toggleAvailable}
@@ -409,11 +447,13 @@ export function AdminPageContent({ initialSlug }: { initialSlug?: string }) {
         <ArchivedMenuSection
           items={archivedItems}
           orderCounts={orderCounts}
+          decorators={decorators}
           unarchiving={unarchiving}
           confirm={confirm}
           onUnarchive={handleUnarchive}
         />
       )}
+      </div>
     </HostShell>
   );
 }

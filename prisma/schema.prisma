@@ -39,6 +39,7 @@ model MenuItem {
   available   Boolean      @default(true)
   archived    Boolean      @default(false)
   category    MenuCategory @default(pastries)
+  decorator   String?
   createdAt   DateTime     @default(now())
 
   orderItems  OrderItem[]

@@ -106,7 +106,7 @@ export function HostLoginForm() {
       onSubmit={handleSubmit}
       className="mt-10 w-full max-w-xs flex flex-col items-center gap-5"
     >
-      <label className="block font-sans text-xs tracking-widest uppercase font-bold text-ink-600">
+      <label className="sf-lazy text-xs tracking-widest uppercase text-white/85">
         enter pin
       </label>
       <input
@@ -122,15 +122,16 @@ export function HostLoginForm() {
         onClick={moveCaretToEnd}
         onFocus={moveCaretToEnd}
         onSelect={moveCaretToEnd}
-        className="w-full bg-transparent border-0 border-b-2 border-ink-400/40 focus:border-ink-900 focus:outline-none font-sans text-center text-ink-900 placeholder-ink-300 py-2 text-2xl tracking-[0.5em] caret-transparent"
+        className="sf-name-input tracking-[0.5em] caret-transparent"
         placeholder="••••"
         aria-label="Host PIN"
       />
 
-      {error && <p className="font-sans text-bakery-500 text-sm">{error}</p>}
+      {error && <p className="sf-lazy text-red-100 text-sm">{error}</p>}
 
       <button
         type="submit"
+        className="sf-btn-primary"
         disabled={submitting || pin.length === 0}
       >
         {submitting ? "checking…" : "unlock"}

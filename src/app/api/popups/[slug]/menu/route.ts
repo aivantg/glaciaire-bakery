@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createMenuItem, getAllMenuItems, type MenuCategory } from "@/lib/store";
 import { isHostAuthenticatedRequest } from "@/lib/host-session";
 import { parseAddons, VALID_CATEGORIES } from "@/lib/menu-parse";
+import { isAllowedDecorator } from "@/lib/decorators";
 import { resolvePopup } from "@/lib/popup-route";
 
 type Context = { params: Promise<{ slug: string }> };
@@ -24,7 +25,8 @@ export async function POST(request: NextRequest, { params }: Context) {
   if ("error" in resolved) return resolved.error;
 
   const body = await request.json();
-  const { name, description, price, available, category, addons } = body;
+  const { name, description, price, available, category, addons, decorator } =
+    body;
 
   if (!name || typeof name !== "string" || name.trim() === "") {
     return NextResponse.json({ error: "Name is required" }, { status: 400 });
@@ -38,12 +40,24 @@ export async function POST(request: NextRequest, { params }: Context) {
   const cat: MenuCategory =
     category && VALID_CATEGORIES.includes(category) ? category : "pastries";
 
+  let deco: string | null = null;
+  if (typeof decorator === "string" && decorator.trim() !== "") {
+    if (!isAllowedDecorator(resolved.popup.slug, decorator.trim())) {
+      return NextResponse.json(
+        { error: "Unknown decorator" },
+        { status: 400 }
+      );
+    }
+    deco = decorator.trim();
+  }
+
   const item = await createMenuItem(resolved.popup.id, {
     name: name.trim(),
     description: (description ?? "").trim(),
     price: Math.round(price),
     available: available !== false,
     category: cat,
+    decorator: deco,
     addons: parseAddons(addons),
   });
 

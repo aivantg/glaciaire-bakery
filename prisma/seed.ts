@@ -32,26 +32,37 @@ const PASSION_ITEMS = [
 
 const STONEFRUIT_ITEMS = [
   {
-    name: "Peach Galette",
-    description: "Rustic tart with ripe summer peaches",
+    name: "Peach Cobbler Cookie",
+    description: "Brown-butter cookie with roasted peaches",
+    price: 550,
+    decorator: "peaches.png",
+  },
+  {
+    name: "Mango Sticky Rice Roll Cake (DF)",
+    description: "Coconut sticky rice, ripe mango, rolled",
+    price: 850,
+    decorator: "mango-coconut.png",
+  },
+  {
+    name: "Aprium Pistachio Tart",
+    description: "Pistachio cream and jammy apriums",
+    price: 750,
+    decorator: "apricots.png",
+  },
+  {
+    name: "Mango Lassi Matcha (DF Avail.)",
+    description: "Mango lassi poured over iced matcha",
     price: 650,
-  },
-  {
-    name: "Plum Frangipane",
-    description: "Almond cream and dark plums",
-    price: 700,
-  },
-  {
-    name: "Apricot Danish",
-    description: "Laminated pastry with apricot jam",
-    price: 450,
-  },
-  {
-    name: "Iced Tea",
-    description: "Black tea, lemon, a little sugar",
-    price: 300,
     category: "cafe" as const,
-    addons: [{ name: "Peach syrup", price: 50 }],
+    decorator: "mango.png",
+    addons: [{ name: "Dairy-free", price: 0 }],
+  },
+  {
+    name: "Lychee Iced Tea",
+    description: "Black tea, lychee, a little citrus",
+    price: 450,
+    category: "cafe" as const,
+    decorator: "lychees.png",
   },
 ];
 
@@ -63,22 +74,59 @@ async function upsertPopup(slug: string, name: string, isActive: boolean) {
   });
 }
 
+type SeedItem = {
+  name: string;
+  description: string;
+  price: number;
+  category?: "cafe" | "pastries";
+  decorator?: string;
+  addons?: { name: string; price: number }[];
+};
+
 async function seedItems(
   popupId: string,
-  items: typeof PASSION_ITEMS | typeof STONEFRUIT_ITEMS
+  items: SeedItem[],
+  { replace = false }: { replace?: boolean } = {}
 ) {
+  if (replace) {
+    const keepNames = items.map((item) => item.name);
+    await prisma.menuItem.updateMany({
+      where: { popupId, name: { notIn: keepNames }, archived: false },
+      data: { archived: true, available: false },
+    });
+  }
+
   for (const item of items) {
     const existing = await prisma.menuItem.findFirst({
       where: { name: item.name, popupId },
     });
-    if (existing) continue;
-
     const { addons, category, ...fields } = item;
+    const categoryValue = category ?? "pastries";
+
+    if (existing) {
+      await prisma.menuItem.update({
+        where: { id: existing.id },
+        data: {
+          ...fields,
+          category: categoryValue,
+          archived: false,
+          available: true,
+          addons: addons
+            ? {
+                deleteMany: {},
+                create: addons.map((a) => ({ name: a.name, price: a.price })),
+              }
+            : undefined,
+        },
+      });
+      continue;
+    }
+
     await prisma.menuItem.create({
       data: {
         ...fields,
         popupId,
-        category: category ?? "pastries",
+        category: categoryValue,
         addons: addons?.length
           ? { create: addons.map((a) => ({ name: a.name, price: a.price })) }
           : undefined,
@@ -100,7 +148,7 @@ async function main() {
   }
 
   await seedItems(passion.id, PASSION_ITEMS);
-  await seedItems(stonefruit.id, STONEFRUIT_ITEMS);
+  await seedItems(stonefruit.id, STONEFRUIT_ITEMS, { replace: true });
 
   const count = await prisma.menuItem.count();
   console.log(`Seed complete. Menu items in db: ${count}`);

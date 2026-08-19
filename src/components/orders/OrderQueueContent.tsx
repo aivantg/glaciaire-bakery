@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
-import Link from "next/link";
 import type { Order } from "@/lib/store";
 import {
   isFinishedOrder,
@@ -27,11 +26,9 @@ const CUSTOMER_POLL_MS = 10000;
 
 export function OrderQueueContent({
   slug,
-  popupName,
   menuPath,
 }: {
   slug: string;
-  popupName: string;
   menuPath: string;
 }) {
   const { authenticated } = useHostSession();
@@ -202,26 +199,19 @@ export function OrderQueueContent({
     [orders, filter, now]
   );
 
-  return (
-    <div className="min-h-screen bg-neutral-50 text-neutral-900 px-4 py-6 max-w-3xl mx-auto">
-      <div className="flex items-center justify-between gap-3 mb-6">
-        <Link href={menuPath}>← menu</Link>
-        <span className="text-sm text-neutral-500">{popupName}</span>
-        {authenticated ? (
-          <Link href="/admin" className="text-sm text-neutral-500">
-            admin
-          </Link>
-        ) : (
-          <Link
-            href={`/host?next=${encodeURIComponent(`/admin?popup=${slug}`)}`}
-            className="text-sm text-neutral-500"
-          >
-            host login
-          </Link>
-        )}
-      </div>
+  const themed = slug === "stonefruit";
 
-      <h1>The queue</h1>
+  return (
+    <div className={themed ? "sf-queue pt-4" : "pt-6"}>
+      <h1
+        className={
+          themed
+            ? "sf-display text-5xl sm:text-6xl text-center mb-6"
+            : "hero-stack text-5xl sm:text-7xl md:text-8xl mb-2"
+        }
+      >
+        the queue
+      </h1>
 
       <QueueToolbar
         filterOptions={filterOptions}
@@ -267,7 +257,11 @@ export function OrderQueueContent({
       ) : error ? (
         <ErrorState message={error} />
       ) : filteredOrders.length === 0 ? (
-        <QueueEmptyState filter={filter} hasAnyOrders={orders.length > 0} />
+        <QueueEmptyState
+          filter={filter}
+          hasAnyOrders={orders.length > 0}
+          menuPath={menuPath}
+        />
       ) : (
         <ul className="list-hairline">
           {filteredOrders.map((order) => (

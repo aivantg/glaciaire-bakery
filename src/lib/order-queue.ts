@@ -16,7 +16,7 @@ export const STATUS_NEXT_LABEL: Partial<Record<OrderStatus, string>> = {
   in_progress: "mark ready",
 };
 
-export const RECENTLY_FINISHED_MS = 60 * 1000;
+export const RECENTLY_FINISHED_MS = 2 * 60 * 1000;
 export const ARCHIVED_STATUS_COLOR = "#6b7280";
 
 export type QueueFilter = "working_on_it" | "finished" | "all";

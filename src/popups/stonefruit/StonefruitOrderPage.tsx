@@ -7,12 +7,97 @@ import {
   formatAddonPrice,
   lineUnitPrice,
 } from "@/lib/order-display";
+import { CATEGORY_LABEL } from "@/lib/menu-labels";
 import { useOrderPage } from "@/hooks/useOrderPage";
 import { decoratorSrc } from "@/lib/decorator-src";
+import type { MenuItem } from "@/lib/store";
 import type { PopupOrderPageProps } from "../types";
 
 export function StonefruitOrderPage({ slug, ordersPath }: PopupOrderPageProps) {
   const page = useOrderPage({ slug, ordersPath });
+
+  function renderItem(item: MenuItem) {
+    const qty = page.totalQtyForMenuItem(item.id);
+    const addonIds = page.getAddonIdsForItem(item.id);
+    const addons = availableAddons(item);
+    const soldOut = !item.available;
+    return (
+      <li key={item.id}>
+        <div
+          className={`sf-menu-row${soldOut ? " sf-menu-row--sold-out" : ""}`}
+        >
+          {item.decorator ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={decoratorSrc(slug, item.decorator)}
+              alt=""
+              className="sf-fruit-icon"
+            />
+          ) : null}
+          <div className="sf-item-body">
+            <div className="sf-item-headline">
+              <div className="sf-item-name">
+                {item.name}
+                {soldOut ? (
+                  <span className="sf-sold-out"> sold out</span>
+                ) : null}
+              </div>
+              <div className="sf-item-actions">
+                <div className="sf-item-price">${formatPrice(item.price)}</div>
+                <div className="sf-item-counter">
+                  <button
+                    type="button"
+                    className="sf-counter-btn"
+                    onClick={() => page.removeMostRecent(item)}
+                    disabled={soldOut || qty === 0}
+                    aria-label={`Remove ${item.name}`}
+                  >
+                    −
+                  </button>
+                  <span className="sf-qty">{qty}</span>
+                  <button
+                    type="button"
+                    className="sf-counter-btn"
+                    onClick={() => page.addOne(item, addonIds)}
+                    disabled={soldOut}
+                    aria-label={`Add ${item.name}`}
+                  >
+                    +
+                  </button>
+                </div>
+              </div>
+            </div>
+            {item.description ? (
+              <div className="sf-item-desc">{item.description}</div>
+            ) : null}
+            {addons.length > 0 && (
+              <div className="sf-item-addons">
+                {addons.map((addon) => {
+                  const selected = addonIds.includes(addon.id);
+                  const price = formatAddonPrice(addon.price);
+                  return (
+                    <button
+                      key={addon.id}
+                      type="button"
+                      className="sf-addon-chip"
+                      aria-pressed={selected}
+                      disabled={soldOut}
+                      onClick={() =>
+                        page.toggleAddonSelection(item.id, addon.id)
+                      }
+                    >
+                      {addon.name}
+                      {price ? ` ${price}` : ""}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </div>
+      </li>
+    );
+  }
 
   return (
     <>
@@ -35,99 +120,16 @@ export function StonefruitOrderPage({ slug, ordersPath }: PopupOrderPageProps) {
         </p>
       ) : (
         <form onSubmit={page.goToReview} className="mt-6">
-          <div className="sf-ops-panel">
-            <ul className="sf-menu-list">
-              {page.menuItems.map((item) => {
-                const qty = page.totalQtyForMenuItem(item.id);
-                const addonIds = page.getAddonIdsForItem(item.id);
-                const addons = availableAddons(item);
-                const soldOut = !item.available;
-                return (
-                  <li key={item.id}>
-                    <div
-                      className={`sf-menu-row${soldOut ? " sf-menu-row--sold-out" : ""}`}
-                    >
-                      {item.decorator ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
-                          src={decoratorSrc(slug, item.decorator)}
-                          alt=""
-                          className="sf-fruit-icon"
-                        />
-                      ) : null}
-                      <div className="sf-item-body">
-                        <div className="sf-item-headline">
-                          <div className="sf-item-name">
-                            {item.name}
-                            {soldOut ? (
-                              <span className="sf-sold-out"> sold out</span>
-                            ) : null}
-                          </div>
-                          <div className="sf-item-actions">
-                            <div className="sf-item-price">
-                              ${formatPrice(item.price)}
-                            </div>
-                            <div className="sf-item-counter">
-                              <button
-                                type="button"
-                                className="sf-counter-btn"
-                                onClick={() => page.removeMostRecent(item)}
-                                disabled={soldOut || qty === 0}
-                                aria-label={`Remove ${item.name}`}
-                              >
-                                −
-                              </button>
-                              <span className="sf-qty">{qty}</span>
-                              <button
-                                type="button"
-                                className="sf-counter-btn"
-                                onClick={() => page.addOne(item, addonIds)}
-                                disabled={soldOut}
-                                aria-label={`Add ${item.name}`}
-                              >
-                                +
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                        {item.description ? (
-                          <div className="sf-item-desc">
-                            {item.description}
-                          </div>
-                        ) : null}
-                        {addons.length > 0 && (
-                          <div className="sf-item-addons">
-                            {addons.map((addon) => {
-                              const selected = addonIds.includes(addon.id);
-                              const price = formatAddonPrice(addon.price);
-                              return (
-                                <button
-                                  key={addon.id}
-                                  type="button"
-                                  className="sf-addon-chip"
-                                  aria-pressed={selected}
-                                  disabled={soldOut}
-                                  onClick={() =>
-                                    page.toggleAddonSelection(
-                                      item.id,
-                                      addon.id,
-                                    )
-                                  }
-                                >
-                                  {addon.name}
-                                  {price ? ` ${price}` : ""}
-                                </button>
-                              );
-                            })}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </li>
-                );
-              })}
-            </ul>
-          </div>
+          {page.sections.map(({ category, items }) => (
+            <div key={category} className="sf-ops-panel">
+              <h2 className="sf-menu-section-title">
+                {CATEGORY_LABEL[category]}
+              </h2>
+              <ul className="sf-menu-list">
+                {items.map(({ item }) => renderItem(item))}
+              </ul>
+            </div>
+          ))}
 
           {page.submitError && (
             <p className="mt-4 text-center text-red-700">{page.submitError}</p>

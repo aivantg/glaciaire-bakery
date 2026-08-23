@@ -240,6 +240,14 @@
   color: #2a4d53 !important;
 }
 
+.stonefruit-root .sf-host-mode-top {
+  font-family: var(--font-lazydog), "Lazydog", system-ui, sans-serif !important;
+  font-size: 0.75rem;
+  line-height: 1rem;
+  color: #ffffff;
+  text-shadow: 0 1px 3px rgba(45, 90, 100, 0.45);
+}
+
 .stonefruit-root .sf-ops-panel {
   background: rgba(255, 255, 255, 0.94);
   border: 2px solid rgba(255, 255, 255, 0.95);
@@ -247,6 +255,22 @@
   padding: 1.25rem 1.1rem;
   color: #3d6a72;
   box-shadow: var(--sf-card-shadow);
+}
+
+.stonefruit-root .sf-ops-panel + .sf-ops-panel {
+  margin-top: 0.85rem;
+}
+
+.stonefruit-root .sf-menu-section-title {
+  font-family: var(--font-lazydog), "Lazydog", system-ui, sans-serif;
+  font-size: 0.95rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #3d6a72;
+  margin: 0 0 0.75rem;
+  padding-bottom: 0.45rem;
+  border-bottom: 1px solid rgba(61, 106, 114, 0.16);
 }
 
 .stonefruit-root .sf-ops-panel .sf-btn-primary {

@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { HostModeTopLabel } from "@/components/HostModeTopLabel";
 import { lazydog, petitCochon } from "@/popups/stonefruit/load-fonts";
 import { StonefruitSkyFit } from "@/popups/stonefruit/StonefruitSkyFit";
 import "@/popups/stonefruit/stonefruit-ui.css";
@@ -22,6 +23,7 @@ export function HostShell({
       <StonefruitSkyFit />
       <div className="sf-stage">
         <header className="relative z-10 mx-auto flex w-full max-w-3xl items-center justify-between gap-3 px-5 pt-5 pb-2">
+          <HostModeTopLabel className="sf-host-mode-top absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10 pointer-events-none" />
           <Link href="/" className="flex flex-col items-start leading-none">
             <span className="sf-brand-word">GLACIAIRE</span>
             <span className="mt-1 flex items-center gap-1.5 pl-1">

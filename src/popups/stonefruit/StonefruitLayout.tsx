@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { customerPath } from "@/lib/popups";
+import { HostModeTopLabel } from "@/components/HostModeTopLabel";
 import { MadeWithLoveLink } from "@/components/MadeWithLoveLink";
 import type { PopupLayoutProps } from "../types";
 import { lazydog, petitCochon, nunito } from "./load-fonts";
@@ -16,7 +17,8 @@ export function StonefruitLayout({ slug, isHome, children }: PopupLayoutProps) {
     >
       <StonefruitSkyFit />
       <div className="sf-stage">
-        <header className="mx-auto flex w-full max-w-lg md:max-w-2xl lg:max-w-[min(70%,56rem)] items-start justify-between gap-3 px-4 pt-4 sm:px-5 sm:pt-5">
+        <header className="relative mx-auto flex w-full max-w-lg md:max-w-2xl lg:max-w-[min(70%,56rem)] items-start justify-between gap-3 px-4 pt-4 sm:px-5 sm:pt-5">
+          <HostModeTopLabel className="sf-host-mode-top absolute left-1/2 top-5 sm:top-6 -translate-x-1/2 z-10 pointer-events-none" />
           <Link
             href={customerPath(slug, isHome)}
             className="flex flex-col items-start leading-none"

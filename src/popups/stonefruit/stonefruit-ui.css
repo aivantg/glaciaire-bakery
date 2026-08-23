@@ -134,7 +134,7 @@
 
 @media (min-width: 768px) {
   .stonefruit-root .sf-lockup {
-    margin-top: -3.4rem;
+    margin-top: calc(-3.4rem + 16px);
   }
 
   .stonefruit-root .sf-lockup-img {
@@ -157,7 +157,7 @@
   min-height: 0;
 }
 
-@media (min-width: 768px) and (min-height: 900px) {
+@media (min-width: 768px) and (min-height: 1200px) {
   .stonefruit-root:not(.stonefruit-root--ops):has(.sf-lockup) .sf-stage {
     flex: 1 0 auto;
     display: flex;

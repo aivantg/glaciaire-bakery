@@ -180,7 +180,12 @@ export function useOrderPage({
 
   function closeVenmoPopup() {
     setVenmoAmount(null);
-    router.push(ordersPath);
+    setCart(new Map());
+    setAddHistory({});
+    setActiveAddonIds({});
+    setCustomerName("");
+    setStage("browse");
+    setSubmitError(null);
   }
 
   let colorIdx = 0;

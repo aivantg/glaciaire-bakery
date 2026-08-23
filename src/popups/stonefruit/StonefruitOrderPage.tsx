@@ -240,8 +240,12 @@ export function StonefruitOrderPage({ slug, ordersPath }: PopupOrderPageProps) {
           role="dialog"
           aria-modal="true"
           aria-labelledby="sf-pay-title"
+          onClick={page.closeVenmoPopup}
         >
-          <div className="sf-modal-card text-center">
+          <div
+            className="sf-modal-card text-center"
+            onClick={(e) => e.stopPropagation()}
+          >
             <h2 id="sf-pay-title" className="sf-display text-4xl">
               pay
             </h2>
@@ -258,15 +262,13 @@ export function StonefruitOrderPage({ slug, ordersPath }: PopupOrderPageProps) {
                 priority
               />
             </div>
-            <p className="mt-2 sf-modal-kicker">
-              venmo the host, then view the queue.
-            </p>
+            <p className="mt-2 sf-modal-kicker">venmo the host.</p>
             <button
               type="button"
               className="sf-btn-primary mt-5"
               onClick={page.closeVenmoPopup}
             >
-              done, view queue
+              Done
             </button>
           </div>
         </div>

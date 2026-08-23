@@ -157,13 +157,20 @@ export function TemplateOrderPage({ slug, ordersPath }: PopupOrderPageProps) {
       )}
 
       {page.venmoAmount !== null && (
-        <div role="dialog" aria-modal="true" aria-labelledby="template-pay-title">
-          <h2 id="template-pay-title">Pay</h2>
-          <p>Order placed. Total ${formatPrice(page.venmoAmount)}.</p>
-          <p>Venmo the host using the bakery QR, then view the queue.</p>
-          <button type="button" onClick={page.closeVenmoPopup}>
-            Done, view queue
-          </button>
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="template-pay-title"
+          onClick={page.closeVenmoPopup}
+        >
+          <div onClick={(e) => e.stopPropagation()}>
+            <h2 id="template-pay-title">Pay</h2>
+            <p>Order placed. Total ${formatPrice(page.venmoAmount)}.</p>
+            <p>Venmo the host using the bakery QR.</p>
+            <button type="button" onClick={page.closeVenmoPopup}>
+              Done
+            </button>
+          </div>
         </div>
       )}
     </div>

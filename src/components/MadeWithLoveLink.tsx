@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { parseLoveItems } from "@/lib/love-items";
+import { useHostSession } from "@/hooks/useHostSession";
 
 function pickRandomItem(items: string[]) {
   return items[Math.floor(Math.random() * items.length)] ?? "cookies";
@@ -9,6 +10,7 @@ function pickRandomItem(items: string[]) {
 
 export function MadeWithLoveLink({ slug }: { slug?: string }) {
   const [item, setItem] = useState("cookies");
+  const { authenticated } = useHostSession();
 
   useEffect(() => {
     let cancelled = false;
@@ -38,13 +40,18 @@ export function MadeWithLoveLink({ slug }: { slug?: string }) {
   }, [slug]);
 
   return (
-    <a
-      href="https://github.com/aivantg/glaciaire-bakery"
-      target="_blank"
-      rel="noopener noreferrer"
-      className="font-mono text-xs text-ink-300 hover:text-ink-900 transition-colors"
-    >
-      made with love and {item} :)
-    </a>
+    <div className="flex flex-col items-center gap-0.5">
+      <a
+        href="https://github.com/aivantg/glaciaire-bakery"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="font-mono text-xs text-ink-300 hover:text-ink-900 transition-colors"
+      >
+        made with love and {item} :)
+      </a>
+      {authenticated === true && (
+        <span className="font-mono text-xs text-ink-300">Host Mode</span>
+      )}
+    </div>
   );
 }

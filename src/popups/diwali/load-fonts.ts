@@ -1,9 +1,12 @@
 import localFont from "next/font/local";
 import { Nunito } from "next/font/google";
 
-/** Ek Type Honk — Indian truck-art / “Horn OK Please” colour display face. */
+/**
+ * Monochrome Honk outlines — works everywhere (incl. iOS Safari).
+ * The colorful COLRv1 file is loaded separately via CSS @supports.
+ */
 export const honk = localFont({
-  src: "./fonts/Honk.ttf",
+  src: "./fonts/Honk-Regular.ttf",
   display: "swap",
   variable: "--font-honk",
   weight: "400",

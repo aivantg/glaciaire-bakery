@@ -796,3 +796,30 @@
   background: #0a0a0a;
   color: #fff;
 }
+
+/* Diwali menu editor: festival cream card, Honk type */
+.stonefruit-root--ops .sf-ops-panel--diwali {
+  background: rgba(255, 246, 232, 0.96);
+  border-color: rgba(255, 210, 74, 0.75);
+  color: #4a1840;
+}
+
+.stonefruit-root--ops .sf-ops-panel--diwali,
+.stonefruit-root--ops .sf-ops-panel--diwali .font-sans,
+.stonefruit-root--ops .sf-ops-panel--diwali .font-mono,
+.stonefruit-root--ops .sf-ops-panel--diwali .link-mono {
+  font-family: system-ui, sans-serif;
+  color: #4a1840;
+}
+
+.stonefruit-root--ops .sf-ops-panel--diwali .sf-ops-menu-title {
+  color: #c41e6a;
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+.stonefruit-root--ops .sf-ops-panel--diwali .sf-btn-primary {
+  background: linear-gradient(180deg, #ffb347 0%, #ff8c1a 100%);
+  color: #4a1840;
+  border: 2px solid #ffd24a;
+}

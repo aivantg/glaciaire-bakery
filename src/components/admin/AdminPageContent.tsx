@@ -443,7 +443,9 @@ export function AdminPageContent({ initialSlug }: { initialSlug?: string }) {
             ? "sf-ops-panel--stonefruit"
             : selectedSlug === "passion"
               ? "sf-ops-panel--passion"
-              : ""
+              : selectedSlug === "diwali"
+                ? "sf-ops-panel--diwali"
+                : ""
         }`}
       >
       <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between">
@@ -528,7 +530,9 @@ export function AdminPageContent({ initialSlug }: { initialSlug?: string }) {
               ? "sf-ops-panel--stonefruit"
               : selectedSlug === "passion"
                 ? "sf-ops-panel--passion"
-                : ""
+                : selectedSlug === "diwali"
+                  ? "sf-ops-panel--diwali"
+                  : ""
           }`}
         >
           <label className="block font-sans text-sm">

@@ -66,6 +66,55 @@ const STONEFRUIT_ITEMS = [
   },
 ];
 
+const DIWALI_ITEMS = [
+  {
+    name: "Gajar Halwa Cookies",
+    description: "Carrot-cardamom cookie, pistachio, rose",
+    price: 600,
+    decorator: "gajar-halwa.png",
+  },
+  {
+    name: "Rasmalai Roll Cake",
+    description: "Saffron milk soak, soft roll, pistachios",
+    price: 900,
+    decorator: "rasmalai-roll.png",
+  },
+  {
+    name: "Gulab Jamun Bites",
+    description: "Warm syrup dunkers, silver leaf optional",
+    price: 650,
+    decorator: "gulab-jamun.png",
+  },
+  {
+    name: "Pista Barfi Squares",
+    description: "Dense pistachio fudge, festive cut",
+    price: 550,
+    decorator: "pista-barfi.png",
+  },
+  {
+    name: "Diya Chocolate Chip",
+    description: "Brown-butter chip cookie, edible gold",
+    price: 500,
+    decorator: "diya.png",
+  },
+  {
+    name: "Mango Lassi (DF Avail.)",
+    description: "Alphonso mango, cardamom, chilled",
+    price: 600,
+    category: "cafe" as const,
+    decorator: "mango-lassi.png",
+    addons: [{ name: "Dairy-free", price: 0 }],
+  },
+  {
+    name: "Masala Chai",
+    description: "Ginger-heavy, jaggery sweetness",
+    price: 450,
+    category: "cafe" as const,
+    decorator: "diya.png",
+    addons: [{ name: "Oat milk", price: 50 }],
+  },
+];
+
 async function upsertPopup(
   slug: string,
   name: string,
@@ -155,6 +204,13 @@ async function main() {
     false,
     "cookies, peaches, mango, lychees"
   );
+  // Not the homepage — open at /diwali only.
+  const diwali = await upsertPopup(
+    "diwali",
+    "Diwali",
+    false,
+    "gajar halwa, rasmalai, diyas, mithai"
+  );
 
   const anyActive = await prisma.popup.count({ where: { isActive: true } });
   if (anyActive === 0) {
@@ -166,6 +222,7 @@ async function main() {
 
   await seedItems(passion.id, PASSION_ITEMS);
   await seedItems(stonefruit.id, STONEFRUIT_ITEMS, { replace: true });
+  await seedItems(diwali.id, DIWALI_ITEMS, { replace: true });
 
   const count = await prisma.menuItem.count();
   console.log(`Seed complete. Menu items in db: ${count}`);

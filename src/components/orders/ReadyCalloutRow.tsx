@@ -17,7 +17,7 @@ export function ReadyCalloutRow({
 }: {
   order: Order;
   orderNumber: number;
-  statusPalette?: "default" | "stonefruit";
+  statusPalette?: "default" | "stonefruit" | "diwali";
 }) {
   const [open, setOpen] = useState(false);
   const count = orderItemCount(order);

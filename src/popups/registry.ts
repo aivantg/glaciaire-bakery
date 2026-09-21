@@ -5,6 +5,8 @@ import { TemplateLayout } from "./template/TemplateLayout";
 import { TemplateOrderPage } from "./template/TemplateOrderPage";
 import { StonefruitLayout } from "./stonefruit/StonefruitLayout";
 import { StonefruitOrderPage } from "./stonefruit/StonefruitOrderPage";
+import { DiwaliLayout } from "./diwali/DiwaliLayout";
+import { DiwaliOrderPage } from "./diwali/DiwaliOrderPage";
 import type { PopupLayoutProps, PopupOrderPageProps } from "./types";
 
 export type PopupUI = {
@@ -25,6 +27,10 @@ export const POPUP_UIS: Record<string, PopupUI> = {
   stonefruit: {
     Layout: StonefruitLayout,
     OrderPage: StonefruitOrderPage,
+  },
+  diwali: {
+    Layout: DiwaliLayout,
+    OrderPage: DiwaliOrderPage,
   },
 };
 

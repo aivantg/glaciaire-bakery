@@ -6,10 +6,12 @@ import { getActivePopup } from "@/lib/store";
 const ICONS: Record<string, { rel: string; type: string }> = {
   stonefruit: { rel: "popups/stonefruit/favicon.png", type: "image/png" },
   passion: { rel: "popups/passion/favicon.jpg", type: "image/jpeg" },
+  diwali: { rel: "popups/diwali/favicon.png", type: "image/png" },
 };
 
 const TAB_TITLES: Record<string, string> = {
   stonefruit: "Get Stoned",
+  diwali: "Shubh Diwali",
 };
 
 function iconForSlug(slug: string | null | undefined) {

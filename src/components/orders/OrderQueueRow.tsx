@@ -20,7 +20,7 @@ type OrderQueueRowProps = {
   authenticated: boolean;
   updating: string | null;
   confirm: ReturnType<typeof useConfirmAction>;
-  statusPalette?: "default" | "stonefruit";
+  statusPalette?: "default" | "stonefruit" | "diwali";
   onAdvanceStatus: (order: Order) => void;
   onSetArchived: (orderId: string, archived: boolean) => void | Promise<void>;
   onDeleteOrder: (orderId: string) => void | Promise<void>;

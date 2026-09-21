@@ -87,12 +87,17 @@ export function sortReadyNewestFirst(orders: Order[]): Order[] {
 
 export function statusColor(
   s: OrderStatus,
-  palette: "default" | "stonefruit" = "default"
+  palette: "default" | "stonefruit" | "diwali" = "default"
 ): string {
   if (palette === "stonefruit") {
     if (s === "pending") return "#2f8fad";
     if (s === "in_progress") return "#d4a017";
     return "#4caf70";
+  }
+  if (palette === "diwali") {
+    if (s === "pending") return "#c41e6a";
+    if (s === "in_progress") return "#ff8c1a";
+    return "#2f9e5f";
   }
   if (s === "pending") return "#e94e89";
   if (s === "in_progress") return "#e09d28";

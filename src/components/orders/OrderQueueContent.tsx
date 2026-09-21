@@ -218,28 +218,51 @@ export function OrderQueueContent({
     return sortOrders(visible);
   }, [orders, filter, now]);
 
-  const themed = slug === "stonefruit";
+  const theme =
+    slug === "stonefruit" ? "stonefruit" : slug === "diwali" ? "diwali" : null;
 
   return (
-    <div className={themed ? "sf-queue pt-8 sm:pt-10" : "pt-6"}>
+    <div
+      className={
+        theme === "stonefruit"
+          ? "sf-queue pt-8 sm:pt-10"
+          : theme === "diwali"
+            ? "dw-queue pt-8 sm:pt-10"
+            : "pt-6"
+      }
+    >
       <h1
         className={
-          themed
+          theme === "stonefruit"
             ? "sf-display text-5xl sm:text-6xl text-center mb-4"
-            : "hero-stack text-5xl sm:text-7xl md:text-8xl mb-2"
+            : theme === "diwali"
+              ? "dw-display text-5xl sm:text-6xl text-center mb-4"
+              : "hero-stack text-5xl sm:text-7xl md:text-8xl mb-2"
         }
       >
         the queue
       </h1>
 
-      <div className={themed ? "sf-ops-panel" : undefined}>
+      <div
+        className={
+          theme === "stonefruit"
+            ? "sf-ops-panel"
+            : theme === "diwali"
+              ? "dw-ops-panel"
+              : undefined
+        }
+      >
       <QueueToolbar
         filterOptions={filterOptions}
         filter={filter}
         counts={counts}
         onFilterChange={setFilter}
         className={
-          themed ? "sf-queue-toolbar mt-0 pt-3 pb-3" : undefined
+          theme === "stonefruit"
+            ? "sf-queue-toolbar mt-0 pt-3 pb-3"
+            : theme === "diwali"
+              ? "dw-queue-toolbar mt-0 pt-3 pb-3"
+              : undefined
         }
       />
 
@@ -277,7 +300,7 @@ export function OrderQueueContent({
               key={order.id}
               order={order}
               orderNumber={orderNumbers[order.id]}
-              statusPalette={themed ? "stonefruit" : "default"}
+              statusPalette={theme ?? "default"}
             />
           ))}
           {filteredOrders.map((order) => (
@@ -289,7 +312,7 @@ export function OrderQueueContent({
               authenticated={authenticated === true}
               updating={updating}
               confirm={confirm}
-              statusPalette={themed ? "stonefruit" : "default"}
+              statusPalette={theme ?? "default"}
               onAdvanceStatus={advanceStatus}
               onSetArchived={setOrderArchived}
               onDeleteOrder={deleteOrder}

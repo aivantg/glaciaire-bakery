@@ -23,6 +23,14 @@ const FALLBACK_FILES: Record<string, string[]> = {
     "peaches.png",
     "plums.png",
   ],
+  diwali: [
+    "diya.png",
+    "gajar-halwa.png",
+    "gulab-jamun.png",
+    "mango-lassi.png",
+    "pista-barfi.png",
+    "rasmalai-roll.png",
+  ],
 };
 
 function toDecorators(slug: string, files: string[]): PopupDecorator[] {
